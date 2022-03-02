@@ -1,3 +1,4 @@
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
@@ -6,6 +7,7 @@
 #include <fstream>
 #include <ios>
 #include <iostream>
+#include <ratio>
 #include <vector>
 
 #include "time_it.hpp"
@@ -32,53 +34,53 @@ auto read(char* name)
 
 namespace logic {
 
-auto count_y_after_x(const std::vector<char>& vec, const char y, const char x)
-{
-    uint64_t count = 0;
-    
-    auto size = vec.size();
-    if (size != 0) {
-        if (vec[0] == y && x == 0) {
-            ++count;
-        }
-        for (size_t i = 1; i < vec.size(); ++i) {
-            if (vec[i] == y && vec[i - 1] == x) {
-                ++count;
-            }
-        }
-    }
-
-    return count;
-}
-
 void run(std::vector<char> vec)
 {
     auto space_size = vec.size();
+
+    double h_y_x = 0;
     for (uint32_t j = 0; j <= 0xff; ++j) {
         char x = j;
 
-        double h_y_of_concrete_x = 0;
-        for (uint32_t i = 0; i <= 0xff; ++i) {
-            char y = i;
+        // amount_by_y[y] zawiera ilosc y wystepujacych po x
+        // obliczam rownolegle bo tak jest duzo szybciej (z 13s ma 40ms)
+        // poniewaz tak nie przelatuje przez pamiec 256 razy
+        // oraz gwarantuje ze dokladnie jeden y zostanie dodany jezeli tylko zgadza sie poprzedni x
+        // i nie trzeba opuszczac obliczen kiedy nie zgadza sie y (a potem wykonywac podobne jeszcze raz)
+        std::array<uint64_t, 256> amount_y_if_x { 0 };
+        char last = 0;
+        for (size_t i = 0; i < space_size; ++i) {
+            char current = vec[i];
 
-            auto amount = count_y_after_x(vec, y, x);
-            // if (amount) {
-            //     std::cout << (int)(unsigned char)y << "[" << y << "]"
-            //               << "|"
-            //               << (int)(unsigned char)x << "[" << x << "]"
-            //               << " = " << amount
-            //               << "\n";
-            // }
+            if (last == x) {
+                ++amount_y_if_x[current];
+            }
 
-            if (amount) {
-                h_y_of_concrete_x += (double)amount * std::log2((double)space_size / amount) / space_size;
+            last = current;
+        }
+
+        double h_y_if_x = 0;
+        for (uint32_t y = 0; y <= 0xff; ++y) {
+            if (amount_y_if_x[y]) {
+                h_y_if_x += (double)amount_y_if_x[y] * std::log2((double)space_size / amount_y_if_x[y]) / space_size;
             }
         }
         std::cout << "H(Y|"
                   << (int)(unsigned char)x //<< "[" << x << "]"
-                  << ") = " << h_y_of_concrete_x << "\n";
-        std::cout.flush();
+                  << ") = " << h_y_if_x << "\n";
+        // std::cout.flush();
+
+        // prawdopodobienstwo x to ilosc wystapien x / wsystkie znaki
+        uint64_t amount_x = 0;
+        for (size_t i = 0; i < space_size; ++i) {
+            if (vec[i] == x) {
+                ++amount_x;
+            }
+        }
+
+        h_y_x += h_y_if_x * amount_x / space_size;
     }
+    std::cout << "H(Y|X) = " << h_y_x << "\n";
 }
 }
 
@@ -91,12 +93,12 @@ int main(int argc, char** argv)
         return 1;
     };
 
-    utils::time_it<std::chrono::microseconds> timer {};
+    utils::time_it<std::chrono::milliseconds> timer {};
 
     auto data = files::read(argv[1]);
     std::cout << "<info>: dlugosc: " << data.size() << "\n";
 
     logic::run(data);
 
-    std::cout << "<info>: program wykonal sie w " << timer.measure() << "us";
+    std::cout << "<info>: program wykonal sie w " << timer.measure() << "ms";
 }
