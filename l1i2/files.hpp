@@ -1,11 +1,13 @@
-#include <vector>
+#include <cstddef>
 #include <fstream>
+#include <vector>
 
 namespace files {
 
-inline auto read(char* name)
+template <typename T>
+inline auto read_binary(char* name)
 {
-    std::vector<char> vec {};
+    std::vector<T> vec {};
 
     std::ifstream file(name, std::ios::in | std::ios::binary | std::ios::ate);
     if (file.is_open()) {
@@ -13,10 +15,17 @@ inline auto read(char* name)
         auto size = file.tellg();
         file.seekg(0, std::ios::beg);
 
-        vec.resize(size);
-        file.read(vec.data(), size);
+        vec.reserve(size / sizeof(T));
+        for (size_t i = 0; i < size; i += sizeof(T)) {
+            char symbol[sizeof(T)];
+            file.read(symbol, sizeof(T));
+
+            vec.push_back(*reinterpret_cast<T*>(symbol));
+        }
+
         file.close();
     }
+
     return vec;
 }
 }

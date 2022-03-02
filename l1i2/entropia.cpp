@@ -15,7 +15,7 @@ int main(int argc, char** argv)
         return 1;
     };
 
-    auto const data = files::read(argv[1]);
+    auto const data = files::read_binary<unsigned char>(argv[1]);
 
     utils::time_it<std::chrono::milliseconds> timer {};
     if (data.size() != 0) {
