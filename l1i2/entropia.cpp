@@ -15,15 +15,15 @@ int main(int argc, char** argv)
         return 1;
     };
 
-    utils::time_it<std::chrono::milliseconds> timer {};
-
     auto const data = files::read(argv[1]);
+
+    utils::time_it<std::chrono::milliseconds> timer {};
     if (data.size() != 0) {
 
-        algo::entropia_warunkowa(data);
-        algo::entropia(data);
+        algo::conditional_entropy(data);
+        algo::entropy(data);
     }
 
     std::cout << "<info>: dlugosc: " << data.size() << "\n";
-    std::cout << "<info>: program wykonal sie w " << timer.measure() << "ms";
+    std::cout << "<info>: program liczyl sie w " << timer.measure() << "ms";
 }
