@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 
     auto const data = files::read_binary<unsigned char>(argv[1]);
 
-    utils::time_it<std::chrono::milliseconds> timer {};
+    utils::time_it<std::chrono::microseconds> timer {};
     if (data.size() != 0) {
 
         algo::conditional_entropy(data);
@@ -25,5 +25,5 @@ int main(int argc, char** argv)
     }
 
     std::cout << "<info>: dlugosc: " << data.size() << "\n";
-    std::cout << "<info>: program liczyl sie w " << timer.measure() << "ms";
+    std::cout << "<info>: program liczyl sie w " << timer.measure() << "us";
 }
