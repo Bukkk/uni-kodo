@@ -78,8 +78,6 @@ inline auto entropy(const std::vector<unsigned char>& set)
     for (uint32_t x = 0; x < 0x100; ++x) {
 
         if (amount[x] != 0) {
-            // wyciagniecie dzielenia na zewnatrz i odejmowanie zamiast dzielenia
-            // osczedzilo conajwyzej kilka milisekund na 175 pan tadeusz (172 wydaje sie byc srednia)
             auto diff = amount[x] * (log_size - std::log2(amount[x]));
             // std::cout << diff << "\n";
             entropy += diff;
