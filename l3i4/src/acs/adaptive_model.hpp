@@ -1,19 +1,11 @@
 #pragma once
 
+#include <cstdint>
 #include <stdexcept>
 #include <vector>
 
-/* Parameters for data model */
-// static constexpr int MODEL_SIZE = 256 + 1; // 256 + 1 for EOF symbol
-// static constexpr int MODEL_EOF_SYMBOL = 256; // last symbol in model is EOF symbol
-
-constexpr uint64_t powerOf(uint64_t a, uint64_t n)
-{
-    return n == 0 ? 1 : a * powerOf(a, n - 1);
-}
-
 static constexpr uint64_t PRECISION = 32;
-static constexpr uint64_t WHOLE = powerOf(2, PRECISION);
+static constexpr uint64_t WHOLE = uint64_t{1} << PRECISION;
 static constexpr uint64_t HALF = WHOLE / 2;
 static constexpr uint64_t QUARTER = WHOLE / 4;
 
@@ -67,25 +59,16 @@ public:
 
     auto scale_from(size_t symbol)
     {
-        return scale_from_.at(symbol);
+        return scale_from_[symbol];
     }
 
     auto scale_to(size_t symbol)
     {
-        return scale_to_.at(symbol);
+        return scale_to_[symbol];
     }
 
     void update(size_t symbol)
     {
-        // ??
-        if (occurences_sum_ >= MODEL_MAX_FREQUENCY) { // Check if frequency counter reaches max
-            occurences_sum_ = 0; // If so, halve all counts (keeping them
-            for (auto& freq : occurence_) { // positive).
-                freq = freq / 2 != 0 ? freq / 2 : 1;
-                occurences_sum_ += freq;
-            }
-        }
-
         occurence_[symbol]++;
         occurences_sum_++;
 

@@ -12,7 +12,7 @@ namespace binary {
         {
             auto&& start = istream.tellg();
             istream.seekg(0, std::ios::end);
-            auto&& size = istream.tellg();
+            auto&& size = istream.tellg() - start;
             istream.seekg(start, std::ios::beg);
 
             return size;

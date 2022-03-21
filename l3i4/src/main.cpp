@@ -1,6 +1,7 @@
 #include "acs/acs.hpp"
 #include "utils/stream_vector.hpp"
 #include <fstream>
+#include <ios>
 #include <string>
 #include <utils/args_helper.hpp>
 #include <utils/time_it.hpp>
@@ -12,6 +13,7 @@
 
 int main(int argc, char** argv)
 {
+    std::ios_base::sync_with_stdio(false);
 
     utils::args_helper args { {}, { "-h", "-d", "-e" },
         "program do adaptacyjnego kodowania arytmetycznego ze skalowaniem\n"
@@ -46,19 +48,9 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    std::ifstream input_file { input_filepath };
-    if (!input_file) {
-        std::cout << "nie mozna otworzyc pliku czytania\n";
-        return 1;
-    }
-
-    std::vector<unsigned char> input_data {};
-    {
-        using utils::vector_stream_operators::binary::operator>>;
-        input_file >> input_data;
-    }
-
     using utils::vector_stream_operators::binary::operator<<;
+    using utils::vector_stream_operators::binary::operator>>;
+
     // std::cout << input_data << '\n';
     // std::vector<bool> bv = vector_cast(input_data);
     // std::vector<unsigned char> cv = vector_cast(bv);
@@ -69,33 +61,72 @@ int main(int argc, char** argv)
 
     if (mode == "e") {
         std::cout << "koduje\n";
-        acs::encode(input_data, output_data);
 
-    } else if (mode == "d") {
-        std::cout << "dekoduje\n";
-        
-        if (args.positional_args().size() < 4) {
-            std::cout << "podaj ilosc znakow do zdekodowania\n";
+        std::vector<unsigned char> input_data {};
+        std::ifstream input_file { input_filepath };
+        if (input_file) {
+            input_file >> input_data;
+
+            input_file.close();
+        } else {
+            std::cout << "nie mozna otworzyc pliku czytania\n";
             return 1;
         }
 
-        auto amount_to_decode = atoll(args.positional_args()[3].c_str());
-        acs::decode(input_data, output_data, amount_to_decode);
+        auto output_data = acs::encode(input_data);
+
+        std::ofstream output_file { output_filepath };
+        if (output_file) {
+            uint64_t to_decode = input_data.size();
+            char buff[8];
+            for (uint32_t i {}; i < 8; ++i) {
+                buff[i] = (to_decode >> i * 8) & 0xff;
+            }
+            output_file.write(buff, 8);
+
+            output_file << output_data;
+
+            output_file.close();
+        } else {
+            std::cout << "nie mozna otworzyc pliku zapisu\n";
+            return 1;
+        }
+
+    } else if (mode == "d") {
+        std::cout << "dekoduje\n";
+
+        uint64_t to_decode {};
+        std::vector<unsigned char> input_data {};
+        std::ifstream input_file { input_filepath };
+        if (input_file) {
+            char buff[8];
+            input_file.read(buff, 8);
+            for (uint32_t i {}; i < 8; ++i) {
+                to_decode |= ((uint64_t)buff[i] & 0xff) << 8*i;
+            }
+
+            input_file >> input_data;
+
+            input_file.close();
+        } else {
+            std::cout << "nie mozna otworzyc pliku czytania\n";
+            return 1;
+        }
+
+        auto output_data = acs::decode(input_data, to_decode);
+        std::cout << output_data;
+
+        std::ofstream output_file { output_filepath };
+        if (output_file) {
+            output_file << output_data;
+
+            output_file.close();
+        } else {
+            std::cout << "nie mozna otworzyc pliku zapisu\n";
+            return 1;
+        }
     } else {
         std::cout << "nie znany tryb dzialania\n";
         return 1;
-    }
-
-    std::cout << output_data;
-    std::cout << "plik wejsciowy size=" << input_data.size() << " bajtow" << '\n';
-
-    std::ofstream output_file { output_filepath };
-    if (!output_file) {
-        std::cout << "nie mozna otworzyc pliku zapisu\n";
-        return 1;
-    }
-    {
-        using utils::vector_stream_operators::binary::operator<<;
-        output_file << output_data;
     }
 }

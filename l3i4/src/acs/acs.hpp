@@ -1,15 +1,7 @@
 #pragma once
 
-// Container for bits statistics.
-#include <cstdint>
-#include <math.h>
-struct BitStat {
-    unsigned long long readCounter = 0; // Number of input bits.
-    unsigned long long writeCounter = 0; // Number of output bits.
-};
-
 #include <cmath>
-#include <string>
+#include <cstdint>
 #include <vector>
 
 #include "adaptive_model.hpp"
@@ -66,45 +58,43 @@ struct BitStat {
 //     std::vector<BitStat> m_stats;
 // };
 
-inline auto vector_cast(const std::vector<unsigned char>& char_vector) -> std::vector<bool>
-{
-    std::vector<bool> bool_vector {};
-    bool_vector.reserve(8 * char_vector.size());
-
-    for (std::size_t byte_id {}; byte_id < char_vector.size(); ++byte_id) {
-        for (uint32_t bit_id = 8; bit_id > 0; --bit_id) {
-            // TODO nie wiem gdzie jest koniec. dodaja sie false na koncu jak to wplywa na dekompresje
-
-            bool val = char_vector[byte_id] & (1 << (bit_id - 1));
-            bool_vector.push_back(val);
-        }
-    }
-
-    return bool_vector;
-}
-
-inline auto vector_cast(const std::vector<bool>& bool_vector) -> std::vector<unsigned char>
-{
-    std::vector<unsigned char> char_vector(bool_vector.size() / 8 + (bool_vector.size() % 8 ? 1 : 0));
-
-    for (std::size_t i {}; i < bool_vector.size(); ++i) {
-        std::size_t byte_id = i / 8;
-        uint32_t bit_id = 8 - i % 8;
-
-        unsigned char val = bool_vector[i] ? (1 << (bit_id - 1)) : 0;
-        char_vector[byte_id] |= val;
-    }
-
-    return char_vector;
-}
-
-/* Parameters for encoding algorithm */
-
-// using byte_t = uint8_t;
-
 namespace acs {
-inline void encode(std::vector<unsigned char>& input_vector, std::vector<unsigned char>& output_vector)
+namespace {
+    inline auto vector_cast(const std::vector<unsigned char>& char_vector) -> std::vector<bool>
+    {
+        std::vector<bool> bool_vector {};
+        bool_vector.reserve(8 * char_vector.size());
+
+        for (std::size_t byte_id {}; byte_id < char_vector.size(); ++byte_id) {
+            for (uint32_t bit_id = 8; bit_id > 0; --bit_id) {
+                bool val = char_vector[byte_id] & (1 << (bit_id - 1));
+                bool_vector.push_back(val);
+            }
+        }
+
+        return bool_vector;
+    }
+
+    inline auto vector_cast(const std::vector<bool>& bool_vector) -> std::vector<unsigned char>
+    {
+        std::vector<unsigned char> char_vector(bool_vector.size() / 8 + (bool_vector.size() % 8 ? 1 : 0));
+
+        for (std::size_t i {}; i < bool_vector.size(); ++i) {
+            std::size_t byte_id = i / 8;
+            uint32_t bit_id = 8 - i % 8;
+
+            unsigned char val = bool_vector[i] ? (1 << (bit_id - 1)) : 0;
+            char_vector[byte_id] |= val;
+        }
+
+        return char_vector;
+    }
+}
+
+inline auto encode(const std::vector<unsigned char>& input_vector) -> std::vector<unsigned char>
 {
+    std::vector<unsigned char> output_vector {};
+
     adaptive_model model {};
 
     uint64_t a = 0;
@@ -170,111 +160,102 @@ inline void encode(std::vector<unsigned char>& input_vector, std::vector<unsigne
     }
 
     output_vector = vector_cast(bool_vector);
+
+    return output_vector;
 }
 
-inline void decode(std::vector<unsigned char>& input_vector, std::vector<unsigned char>& output_vector, std::size_t amount_to_decode)
+inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amount_to_decode) -> std::vector<unsigned char>
 {
-    adaptive_model model {};
-    output_vector.clear();
+    std::vector<unsigned char> output_vector {};
+    output_vector.reserve(amount_to_decode);
 
+    adaptive_model model {};
     std::vector<bool> bool_vector = vector_cast(input_vector);
 
     uint64_t a = 0;
     uint64_t b = WHOLE;
     uint64_t z = 0;
 
-    
     auto iter = bool_vector.begin();
-    for (size_t i = 1; i <= PRECISION; ++i) { // Initialize 'z' with as many bits as you can
+    for (std::size_t i = 1; i <= PRECISION; ++i) {
         bool val = *iter;
         ++iter;
         if (val) // bit '1' read
-            z += powerOf(2, PRECISION - i); // z sklada bity od najwiekszego do najmniejszego
+            z += uint64_t { 1 } << (PRECISION - i); // z sklada bity od najwiekszego do najmniejszego
     }
 
     while (true) {
-        // decode a symbol (binary search)
-        size_t sym_a = 0;
-        size_t sym_b = model.size() - 1;
-        while (sym_a <= sym_b) {
-            size_t symbol = sym_a + (sym_b - sym_a) / 2;
+        // przeszukiwanie binarne
+        std::size_t sym_left = 0;
+        std::size_t sym_right = model.size() - 1;
+        while (sym_left <= sym_right) {
+            std::size_t symbol = sym_left + (sym_right - sym_left) / 2;
 
-            // jakie sa przedzialy skali jezeli left right wyznaczaja symbol
+            // jakie sa przedzialy skali dla danego symbola
             uint64_t b_a = b - a;
-            uint64_t a0 = a + b_a * model.scale_from(symbol) / model.occurences_sum();
-            uint64_t b0 = a + b_a * model.scale_to(symbol) / model.occurences_sum();
+            uint64_t sym_from = a + b_a * model.scale_from(symbol) / model.occurences_sum();
+            uint64_t sym_to = a + b_a * model.scale_to(symbol) / model.occurences_sum();
 
-            // assert(a0 < b0); // must be true
-            if (a0 >= b0) {
-                int a = 23;
-                return;
-                // throw std::runtime_error("decode:: !a < b");
-            }
+            if (z < sym_from) {
+                sym_right = symbol - 1;
+            } else if (z >= sym_to) {
+                sym_left = symbol + 1;
+            } else {
+                // z jest w srodku przedzialu tego symbolu -- sukces odczytano symbol
 
-            // if (a0 == b0) {
-            //     unsigned char decoded = static_cast<unsigned char>(symbol);
-            //     output_vector.push_back(decoded);
-            //     return;
-            // }
+                unsigned char decoded_symbol = static_cast<unsigned char>(symbol);
+                output_vector.push_back(decoded_symbol);
 
-            if (z < a0)
-                sym_b = symbol - 1;
-            else if (z >= b0)
-                sym_a = symbol + 1;
-            else // symbol found: a0 <= z < b0
-            {
-                // if (symbol == MODEL_EOF_SYMBOL) { // End Of File symbol
-                //     clearProgress();
-                //     return;
-                // }
+                a = sym_from;
+                b = sym_to;
 
-                unsigned char decoded = static_cast<unsigned char>(symbol);
-                output_vector.push_back(decoded);
-
-                a = a0;
-                b = b0;
-
-                model.update(decoded);
-                // updateProgress((double)(bitsRead + 16) / filesize / 8);
-
-                // if (close && a0 >= b0) {
-                //     return;
-                // }
+                model.update(decoded_symbol);
 
                 if (output_vector.size() == amount_to_decode) {
-                    return;
+                    return output_vector;
+                } else {
+                    break;
                 }
 
                 break;
             }
         }
 
-        // if (iter == bool_vector.end()) {
-        //     return;
-        // }
+        // nie da sie wyznaczyc algorytmicznie momentu wyjscia
+        // poniewaz w momencie kiedy skoncza sie bity
+        // z ma taka wartosc aby do konca pliku nic nie trzeba bylo do niego dodawac
+        // ale nie ma jakiejs dokladnej wartosci po zakonczeniu wczytywania pliku
+        // tylko wystarczajaca aby odczytac do ostatniego bajta
+        // kodowanie zostawia takie wiszace z w momencie "musi byc jakos wieksze od polowy"
+        // a nie da sie dokladnie zrobic calosci bo nie kazda liczba w systemie 2kowym ma dokladna reprezentacje
+        // -> zatem trzeba znac ilosc bajtow do odczytania, albo miec specjalny znak zakonczenia
+        // -> jest to program do odczytywania binarnych ciagow wiec nie mozna miec specjalnego znaku bo wszystkie musza byc dostepne
+        // -> zatem nalezy zapisac liczbe bajtow do odczytania w pliku wynikowym w odpowiednim miejscu
 
-        // Scaling
+        // skalowanie
         while (true) {
             if (b < HALF) { // rozszerzenie lewej
+
             } else if (HALF < a) { // rozszerzenie prawej
+
                 a -= HALF;
                 b -= HALF;
                 z -= HALF;
+
             } else if (QUARTER <= a && b < 3 * QUARTER) { // rozszerzenie srodka
+
                 a -= QUARTER;
                 b -= QUARTER;
                 z -= QUARTER;
             } else {
-                // b - a juz jest wieksze niz polowa
+
                 break;
             }
             a *= 2;
             b *= 2;
             z *= 2;
 
-            // Update z approximation
             if (iter < bool_vector.end()) {
-
                 if (*iter)
                     z += 1;
                 ++iter;
