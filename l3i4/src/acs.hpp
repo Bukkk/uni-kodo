@@ -4,61 +4,117 @@
 #include <cstdint>
 #include <vector>
 
-#include "adaptive_model.hpp"
+#include <cstddef>
+#include <cstdint>
+#include <stdexcept>
+#include <vector>
 
-// class Statistics {
-// public:
-//     Statistics(std::vector<BitStat> stats)
-//         : m_stats(stats)
-//     {
-//     }
+namespace algo {
+static constexpr uint64_t BITS_PRECISION = 32;
+static constexpr uint64_t WHOLE_INTERVAL = uint64_t { 1 } << BITS_PRECISION;
+static constexpr uint64_t HALF_INTERVAL = WHOLE_INTERVAL / 2;
+static constexpr uint64_t QUARTER_INTERVAL = WHOLE_INTERVAL / 4;
 
-//     double entropy()
-//     {
-//         unsigned long long n = 0uLL; // total number of bits written
-//         for (size_t i = 0; i < m_stats.size(); i++)
-//             n += m_stats[i].readCounter;
+class adaptive_model {
+    static constexpr uint64_t MAX_OCCURENCE = QUARTER_INTERVAL - 1;
+    static constexpr uint64_t SYMBOL_AMOUNT = 256;
 
-//         double h = 0;
-//         for (size_t i = 0; i < m_stats.size(); i++) {
-//             double p = (double)m_stats[i].readCounter / n;
-//             if (p > 0)
-//                 h += m_stats[i].readCounter * -log2(p);
-//         }
-//         return h / n;
-//     }
+    std::vector<uint64_t> occurence_;
+    std::vector<uint64_t> scale_from_;
+    std::vector<uint64_t> scale_to_;
 
-//     double averageCodingLength()
-//     {
-//         unsigned long long inputBits = 0;
-//         unsigned long long outputBits = 0;
+    // suma po occurence[i]
+    uint64_t occurences_sum_;
 
-//         for (size_t i = 0; i < m_stats.size(); i++) {
-//             inputBits += m_stats[i].readCounter;
-//             outputBits += m_stats[i].writeCounter;
-//         }
+    void calculate_scale()
+    {
+        uint64_t sum = 0;
+        for (size_t symbol = 0; symbol < occurence_.size(); symbol++) {
+            scale_from_[symbol] = sum;
+            sum += occurence_[symbol];
+            scale_to_[symbol] = sum;
+        }
+    }
 
-//         return 8 * ((double)outputBits / inputBits); // bits per symbol (byte)
-//     }
+public:
+    adaptive_model()
+        : occurence_(SYMBOL_AMOUNT)
+        , scale_from_(SYMBOL_AMOUNT)
+        , scale_to_(SYMBOL_AMOUNT)
+    {
+        static_assert(SYMBOL_AMOUNT < MAX_OCCURENCE, "za duza liczba symboli - nie mieszcza sie w maksymalnej dokladnosci");
 
-//     double compressionRatio()
-//     {
-//         unsigned long long inputBits = 0;
-//         unsigned long long outputBits = 0;
+        // zakladam ze wszystkie pojawily sie z raz aby bylo porowno i nie zero
+        for (std::size_t i = 0; i < occurence_.size(); i++)
+            occurence_[i] = 1;
 
-//         for (size_t i = 0; i < m_stats.size(); i++) {
-//             inputBits += m_stats[i].readCounter;
-//             outputBits += m_stats[i].writeCounter;
-//         }
+        occurences_sum_ = SYMBOL_AMOUNT;
 
-//         return (1.0 - (double)outputBits / inputBits);
-//     }
+        calculate_scale();
+    }
 
-// private:
-//     std::vector<BitStat> m_stats;
-// };
+    auto size()
+    {
+        return occurence_.size();
+    }
 
-namespace acs {
+    auto occurences_sum()
+    {
+        return occurences_sum_;
+    }
+
+    auto scale_from(std::size_t symbol)
+    {
+        return scale_from_[symbol];
+    }
+
+    auto scale_to(std::size_t symbol)
+    {
+        return scale_to_[symbol];
+    }
+
+    void update(std::size_t symbol)
+    {
+        occurence_[symbol]++;
+        occurences_sum_++;
+
+        calculate_scale();
+    }
+};
+
+inline auto entropy(const std::vector<unsigned char>& set) -> double
+{
+    auto const size = set.size();
+
+    uint64_t amount[0x100] = {};
+    for (size_t i = 0; i < size; ++i) {
+        ++amount[set[i]];
+    }
+
+    auto const log_size = std::log2(size);
+    double entropy = 0;
+    for (uint32_t x = 0; x < 0x100; ++x) {
+
+        if (amount[x] != 0) {
+            auto diff = amount[x] * (log_size - std::log2(amount[x]));
+            entropy += diff;
+        }
+    }
+    entropy /= size;
+
+    return entropy;
+}
+
+inline auto average_coding_length(std::size_t coded_size, std::size_t orginal_size) -> double
+{
+    return 8. * coded_size / orginal_size;
+}
+
+inline auto compression_ratio(std::size_t coded_size, std::size_t orginal_size) -> double
+{
+    return 1. * coded_size / orginal_size;
+}
+
 namespace {
     inline auto vector_cast(const std::vector<unsigned char>& char_vector) -> std::vector<bool>
     {
@@ -98,20 +154,20 @@ inline auto encode(const std::vector<unsigned char>& input_vector) -> std::vecto
     adaptive_model model {};
 
     uint64_t a = 0;
-    uint64_t b = WHOLE;
+    uint64_t b = WHOLE_INTERVAL;
     uint64_t licznik = 0; // jak na wykladzie -- nie moge wymyslec lepszej nazwy
 
     std::vector<bool> bool_vector {};
     for (auto byte : input_vector) {
 
-        size_t symbol = byte;
+        std::size_t symbol = byte;
         uint64_t w = b - a;
         b = a + (w * model.scale_to(symbol) / model.occurences_sum());
         a = a + (w * model.scale_from(symbol) / model.occurences_sum());
 
         // skalowanie
         while (true) {
-            if (b < HALF) {
+            if (b < HALF_INTERVAL) {
                 // oba po lewej stronie - rozszerzenie lewej
                 bool_vector.push_back(0);
                 for (auto i = decltype(licznik) {}; i < licznik; ++i) {
@@ -119,7 +175,7 @@ inline auto encode(const std::vector<unsigned char>& input_vector) -> std::vecto
                 }
                 licznik = 0;
 
-            } else if (HALF < a) {
+            } else if (HALF_INTERVAL < a) {
                 // oba po prawej stronie - rozszerzenie prawej
                 bool_vector.push_back(1);
                 for (auto i = decltype(licznik) {}; i < licznik; ++i) {
@@ -127,12 +183,12 @@ inline auto encode(const std::vector<unsigned char>& input_vector) -> std::vecto
                 }
                 licznik = 0;
 
-                a -= HALF;
-                b -= HALF;
-            } else if (QUARTER <= a && b < 3 * QUARTER) {
+                a -= HALF_INTERVAL;
+                b -= HALF_INTERVAL;
+            } else if (QUARTER_INTERVAL <= a && b < 3 * QUARTER_INTERVAL) {
                 // a i b sa po srodku
-                a -= QUARTER;
-                b -= QUARTER;
+                a -= QUARTER_INTERVAL;
+                b -= QUARTER_INTERVAL;
                 ++licznik;
             } else {
                 // a i b juz sa dluzsze niz polowa -- koniec skalowania
@@ -147,7 +203,7 @@ inline auto encode(const std::vector<unsigned char>& input_vector) -> std::vecto
 
     // skonczyly sie znaki ale przedzial musi osiagnac odpowiednia dlugosc
     licznik += 1;
-    if (a < QUARTER) {
+    if (a < QUARTER_INTERVAL) {
         bool_vector.push_back(0);
         for (auto i = decltype(licznik) {}; i < licznik; ++i) {
             bool_vector.push_back(1);
@@ -170,18 +226,19 @@ inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amou
     output_vector.reserve(amount_to_decode);
 
     adaptive_model model {};
+
     std::vector<bool> bool_vector = vector_cast(input_vector);
 
     uint64_t a = 0;
-    uint64_t b = WHOLE;
+    uint64_t b = WHOLE_INTERVAL;
     uint64_t z = 0;
 
     auto iter = bool_vector.begin();
-    for (std::size_t i = 1; i <= PRECISION; ++i) {
+    for (std::size_t i = 1; i <= BITS_PRECISION; ++i) {
         bool val = *iter;
         ++iter;
         if (val) // bit '1' read
-            z += uint64_t { 1 } << (PRECISION - i); // z sklada bity od najwiekszego do najmniejszego
+            z += uint64_t { 1 } << (BITS_PRECISION - i); // z sklada bity od najwiekszego do najmniejszego
     }
 
     while (true) {
@@ -234,19 +291,19 @@ inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amou
 
         // skalowanie
         while (true) {
-            if (b < HALF) { // rozszerzenie lewej
+            if (b < HALF_INTERVAL) { // rozszerzenie lewej
 
-            } else if (HALF < a) { // rozszerzenie prawej
+            } else if (HALF_INTERVAL < a) { // rozszerzenie prawej
 
-                a -= HALF;
-                b -= HALF;
-                z -= HALF;
+                a -= HALF_INTERVAL;
+                b -= HALF_INTERVAL;
+                z -= HALF_INTERVAL;
 
-            } else if (QUARTER <= a && b < 3 * QUARTER) { // rozszerzenie srodka
+            } else if (QUARTER_INTERVAL <= a && b < 3 * QUARTER_INTERVAL) { // rozszerzenie srodka
 
-                a -= QUARTER;
-                b -= QUARTER;
-                z -= QUARTER;
+                a -= QUARTER_INTERVAL;
+                b -= QUARTER_INTERVAL;
+                z -= QUARTER_INTERVAL;
             } else {
 
                 break;
