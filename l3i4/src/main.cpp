@@ -1,3 +1,4 @@
+#include "acs/acs.hpp"
 #include "utils/stream_vector.hpp"
 #include <fstream>
 #include <string>
@@ -5,6 +6,9 @@
 #include <utils/time_it.hpp>
 
 #include <iostream>
+
+// Program kodujący powinien dodatkowo na koniec zwrócić na ekran odpowiednio
+// entropię kodowanych danych, średnią długość kodowania i stopień kompresji.
 
 int main(int argc, char** argv)
 {
@@ -52,21 +56,46 @@ int main(int argc, char** argv)
     {
         using utils::vector_stream_operators::binary::operator>>;
         input_file >> input_data;
-        input_file.seekg(0, std::ios::beg);
     }
 
-    // using utils::vector_stream_operators::binary::operator<<;
+    using utils::vector_stream_operators::binary::operator<<;
     // std::cout << input_data << '\n';
-    std::cout << "plik wejsciowy size=" << input_data.size() << " bajtow" << '\n';
+    // std::vector<bool> bv = vector_cast(input_data);
+    // std::vector<unsigned char> cv = vector_cast(bv);
+    // std::cout << cv << '\n';
+    // std::cout << "org=" << input_data.size() << " bv=" << bv.size() << " cv=" << cv.size() << '\n';
+
+    std::vector<unsigned char> output_data {};
 
     if (mode == "e") {
         std::cout << "koduje\n";
+        acs::encode(input_data, output_data);
 
     } else if (mode == "d") {
         std::cout << "dekoduje\n";
+        
+        if (args.positional_args().size() < 4) {
+            std::cout << "podaj ilosc znakow do zdekodowania\n";
+            return 1;
+        }
 
+        auto amount_to_decode = atoll(args.positional_args()[3].c_str());
+        acs::decode(input_data, output_data, amount_to_decode);
     } else {
         std::cout << "nie znany tryb dzialania\n";
         return 1;
+    }
+
+    std::cout << output_data;
+    std::cout << "plik wejsciowy size=" << input_data.size() << " bajtow" << '\n';
+
+    std::ofstream output_file { output_filepath };
+    if (!output_file) {
+        std::cout << "nie mozna otworzyc pliku zapisu\n";
+        return 1;
+    }
+    {
+        using utils::vector_stream_operators::binary::operator<<;
+        output_file << output_data;
     }
 }
