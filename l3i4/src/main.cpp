@@ -63,7 +63,7 @@ int main(int argc, char** argv)
     utils::time_it<std::chrono::milliseconds> timer {};
 
     if (mode == "e") {
-        std::cout << "koduje\n";
+        // std::cout << "koduje\n";
 
         std::vector<unsigned char> input_data {};
         std::ifstream input_file { input_filepath };
@@ -106,7 +106,7 @@ int main(int argc, char** argv)
         }
 
     } else if (mode == "d") {
-        std::cout << "dekoduje\n";
+        // std::cout << "dekoduje\n";
 
         uint64_t to_decode {};
         std::vector<unsigned char> input_data {};

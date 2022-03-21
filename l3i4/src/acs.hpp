@@ -1,9 +1,6 @@
 #pragma once
 
 #include <cmath>
-#include <cstdint>
-#include <vector>
-
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
@@ -273,8 +270,6 @@ inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amou
                 } else {
                     break;
                 }
-
-                break;
             }
         }
 
