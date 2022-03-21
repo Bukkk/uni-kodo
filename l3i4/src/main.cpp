@@ -1,5 +1,6 @@
 #include "acs/acs.hpp"
 #include "utils/stream_vector.hpp"
+#include <chrono>
 #include <fstream>
 #include <ios>
 #include <string>
@@ -57,7 +58,7 @@ int main(int argc, char** argv)
     // std::cout << cv << '\n';
     // std::cout << "org=" << input_data.size() << " bv=" << bv.size() << " cv=" << cv.size() << '\n';
 
-    std::vector<unsigned char> output_data {};
+    utils::time_it<std::chrono::milliseconds> timer{};
 
     if (mode == "e") {
         std::cout << "koduje\n";
@@ -73,7 +74,13 @@ int main(int argc, char** argv)
             return 1;
         }
 
+        timer.set();
+
         auto output_data = acs::encode(input_data);
+
+        auto millis = timer.measure();
+
+        std::cout << "czas kodowania=" << millis << "ms\n";
 
         std::ofstream output_file { output_filepath };
         if (output_file) {
@@ -113,8 +120,14 @@ int main(int argc, char** argv)
             return 1;
         }
 
+        timer.set();
+
         auto output_data = acs::decode(input_data, to_decode);
-        std::cout << output_data;
+
+        auto millis = timer.measure();
+
+        std::cout << output_data << "<koniec pliku>---------------\n";
+        std::cout << "czas dekodownia=" << millis << "ms\n";
 
         std::ofstream output_file { output_filepath };
         if (output_file) {
