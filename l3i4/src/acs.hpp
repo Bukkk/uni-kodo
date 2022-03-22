@@ -7,10 +7,13 @@
 #include <vector>
 
 namespace algo {
-static constexpr uint64_t BITS_PRECISION = 32;
-static constexpr uint64_t WHOLE_INTERVAL = uint64_t { 1 } << BITS_PRECISION;
-static constexpr uint64_t HALF_INTERVAL = WHOLE_INTERVAL / 2;
-static constexpr uint64_t QUARTER_INTERVAL = WHOLE_INTERVAL / 4;
+
+namespace {
+    inline constexpr uint64_t BITS_PRECISION = 32;
+    inline constexpr uint64_t WHOLE_INTERVAL = uint64_t { 1 } << BITS_PRECISION;
+    inline constexpr uint64_t HALF_INTERVAL = WHOLE_INTERVAL / 2;
+    inline constexpr uint64_t QUARTER_INTERVAL = WHOLE_INTERVAL / 4;
+}
 
 class adaptive_model {
     static constexpr uint64_t MAX_OCCURENCE = QUARTER_INTERVAL - 1;
