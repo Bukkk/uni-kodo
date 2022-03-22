@@ -222,6 +222,10 @@ inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amou
     std::vector<unsigned char> output_vector {};
     output_vector.reserve(amount_to_decode);
 
+    if (amount_to_decode == 0) {
+        return output_vector;
+    }
+
     adaptive_model model {};
 
     std::vector<bool> bool_vector = vector_cast(input_vector);
@@ -231,11 +235,12 @@ inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amou
     uint64_t z = 0;
 
     auto iter = bool_vector.begin();
-    for (std::size_t i = 1; i <= BITS_PRECISION; ++i) {
+    for (std::size_t i = 1; i <= BITS_PRECISION && iter < bool_vector.end(); ++i) {
         bool val = *iter;
         ++iter;
-        if (val) // bit '1' read
+        if (val) {
             z += uint64_t { 1 } << (BITS_PRECISION - i); // z sklada bity od najwiekszego do najmniejszego
+        }
     }
 
     while (true) {
