@@ -239,11 +239,14 @@ inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amou
 
     auto iter = bool_vector.begin();
     for (std::size_t i = 1; i <= BITS_PRECISION && iter < bool_vector.end(); ++i) {
-        bool val = *iter;
-        ++iter;
-        if (val) {
+        if (!(iter < bool_vector.end())) {
+            break;
+        }
+
+        if (*iter) {
             z += uint64_t { 1 } << (BITS_PRECISION - i); // z sklada bity od najwiekszego do najmniejszego
         }
+        ++iter;
     }
 
     while (true) {
@@ -316,8 +319,9 @@ inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amou
             z *= 2;
 
             if (iter < bool_vector.end()) {
-                if (*iter)
+                if (*iter) {
                     z += 1;
+                }
                 ++iter;
             }
         }
