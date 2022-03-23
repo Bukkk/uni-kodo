@@ -132,7 +132,7 @@ int main(int argc, char** argv)
 
         auto millis = timer.measure();
 
-        std::cout << output_data << "<koniec pliku>---------------\n";
+//         std::cout << output_data << "<koniec pliku>---------------\n";
 
         std::cout << "czas dekodownia=" << millis << "ms\n";
         std::cout << "entropia pliku wejsciowego=" << algo::entropy(input_data) << '\n';
