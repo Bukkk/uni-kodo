@@ -250,7 +250,6 @@ inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amou
     }
 
     while (true) {
-        // przeszukiwanie binarne
         std::size_t sym_left = 0;
         std::size_t sym_right = model.size() - 1;
         while (sym_left <= sym_right) {
@@ -258,12 +257,12 @@ inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amou
 
             // jakie sa przedzialy skali dla danego symbola
             uint64_t b_a = b - a;
-            uint64_t sym_from = a + b_a * model.scale_from(symbol) / model.occurences_sum();
-            uint64_t sym_to = a + b_a * model.scale_to(symbol) / model.occurences_sum();
+            uint64_t sym_to = a + b_a * model.scale_from(symbol) / model.occurences_sum();
+            uint64_t sym_from = a + b_a * model.scale_to(symbol) / model.occurences_sum();
 
-            if (z < sym_from) {
+            if (z < sym_to) {
                 sym_right = symbol - 1;
-            } else if (z >= sym_to) {
+            } else if (z >= sym_from) {
                 sym_left = symbol + 1;
             } else {
                 // z jest w srodku przedzialu tego symbolu -- sukces odczytano symbol
@@ -271,8 +270,8 @@ inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amou
                 unsigned char decoded_symbol = static_cast<unsigned char>(symbol);
                 output_vector.push_back(decoded_symbol);
 
-                a = sym_from;
-                b = sym_to;
+                a = sym_to;
+                b = sym_from;
 
                 model.update(decoded_symbol);
 
