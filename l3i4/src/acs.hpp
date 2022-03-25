@@ -112,7 +112,7 @@ inline auto average_coding_length(std::size_t coded_size, std::size_t orginal_si
 
 inline auto compression_ratio(std::size_t coded_size, std::size_t orginal_size) -> double
 {
-    return 1. * coded_size / orginal_size;
+    return 1. * orginal_size / coded_size;
 }
 
 namespace {
