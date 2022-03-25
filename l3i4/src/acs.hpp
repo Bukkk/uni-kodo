@@ -161,9 +161,9 @@ inline auto encode(const std::vector<unsigned char>& input_vector) -> std::vecto
     for (auto byte : input_vector) {
 
         std::size_t symbol = byte;
-        uint64_t w = b - a;
-        b = a + (w * model.scale_to(symbol) / model.occurences_sum());
-        a = a + (w * model.scale_from(symbol) / model.occurences_sum());
+        uint64_t b_a = b - a;
+        b = a + (b_a * model.scale_to(symbol) / model.occurences_sum());
+        a = a + (b_a * model.scale_from(symbol) / model.occurences_sum());
 
         // skalowanie
         while (true) {
@@ -252,17 +252,17 @@ inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amou
     while (true) {
         std::size_t sym_left = 0;
         std::size_t sym_right = model.size() - 1;
-        while (sym_left <= sym_right) {
+        while (true) {
             std::size_t symbol = sym_left + (sym_right - sym_left) / 2;
 
             // jakie sa przedzialy skali dla danego symbola
             uint64_t b_a = b - a;
-            uint64_t sym_to = a + b_a * model.scale_from(symbol) / model.occurences_sum();
-            uint64_t sym_from = a + b_a * model.scale_to(symbol) / model.occurences_sum();
+            uint64_t sym_from = a + b_a * model.scale_from(symbol) / model.occurences_sum();
+            uint64_t sym_to = a + b_a * model.scale_to(symbol) / model.occurences_sum();
 
-            if (z < sym_to) {
+            if (z < sym_from) {
                 sym_right = symbol - 1;
-            } else if (z >= sym_from) {
+            } else if (z >= sym_to) {
                 sym_left = symbol + 1;
             } else {
                 // z jest w srodku przedzialu tego symbolu -- sukces odczytano symbol
@@ -270,8 +270,8 @@ inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amou
                 unsigned char decoded_symbol = static_cast<unsigned char>(symbol);
                 output_vector.push_back(decoded_symbol);
 
-                a = sym_to;
-                b = sym_from;
+                a = sym_from;
+                b = sym_to;
 
                 model.update(decoded_symbol);
 
