@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -13,74 +14,96 @@ namespace {
     inline constexpr uint64_t WHOLE_INTERVAL = uint64_t { 1 } << BITS_PRECISION;
     inline constexpr uint64_t HALF_INTERVAL = WHOLE_INTERVAL / 2;
     inline constexpr uint64_t QUARTER_INTERVAL = WHOLE_INTERVAL / 4;
+    inline constexpr uint64_t BLOCK_SIZE = 128;
 }
 
-class adaptive_model {
-    static constexpr uint64_t MAX_OCCURENCE = QUARTER_INTERVAL - 1;
-    static constexpr uint64_t SYMBOL_AMOUNT = 256;
+namespace adaptive {
+    static inline constexpr uint64_t MAX_OCCURENCE = QUARTER_INTERVAL - 1;
+    static inline constexpr uint64_t SYMBOL_AMOUNT = 256;
 
-    std::vector<uint64_t> occurence_;
-    std::vector<uint64_t> scale_from_;
-    std::vector<uint64_t> scale_to_;
+    struct cache {
+        std::array<uint64_t, SYMBOL_AMOUNT> occurence_delta_ {};
+        uint64_t occurences_sum_ {};
 
-    // suma po occurence[i]
-    uint64_t occurences_sum_;
-
-    void calculate_scale()
-    {
-        uint64_t sum = 0;
-        for (size_t symbol = 0; symbol < occurence_.size(); symbol++) {
-            scale_from_[symbol] = sum;
-            sum += occurence_[symbol];
-            scale_to_[symbol] = sum;
+        void update(uint32_t symbol)
+        {
+            ++occurence_delta_[symbol];
+            ++occurences_sum_;
         }
-    }
+    };
 
-public:
-    adaptive_model()
-        : occurence_(SYMBOL_AMOUNT)
-        , scale_from_(SYMBOL_AMOUNT)
-        , scale_to_(SYMBOL_AMOUNT)
-    {
-        static_assert(SYMBOL_AMOUNT < MAX_OCCURENCE, "za duza liczba symboli - nie mieszcza sie w maksymalnej dokladnosci");
+    class model {
 
-        // zakladam ze wszystkie pojawily sie z raz aby bylo porowno i nie zero
-        for (std::size_t i = 0; i < occurence_.size(); i++)
-            occurence_[i] = 1;
+        std::array<uint64_t, SYMBOL_AMOUNT> occurence_ {};
+        std::array<uint64_t, SYMBOL_AMOUNT> scale_from_ {};
+        std::array<uint64_t, SYMBOL_AMOUNT> scale_to_ {};
 
-        occurences_sum_ = SYMBOL_AMOUNT;
+        // suma po occurence[i]
+        uint64_t occurences_sum_;
 
-        calculate_scale();
-    }
+        void calculate_scale()
+        {
+            uint64_t sum = 0;
+            for (size_t symbol = 0; symbol < occurence_.size(); symbol++) {
+                scale_from_[symbol] = sum;
+                sum += occurence_[symbol];
+                scale_to_[symbol] = sum;
+            }
+        }
 
-    auto size()
-    {
-        return occurence_.size();
-    }
+    public:
+        model()
+        {
+            static_assert(SYMBOL_AMOUNT < MAX_OCCURENCE, "za duza liczba symboli - nie mieszcza sie w maksymalnej dokladnosci");
 
-    auto occurences_sum()
-    {
-        return occurences_sum_;
-    }
+            // zakladam ze wszystkie pojawily sie z raz aby bylo porowno i nie zero
+            for (std::size_t i = 0; i < occurence_.size(); i++)
+                occurence_[i] = 1;
 
-    auto scale_from(std::size_t symbol)
-    {
-        return scale_from_[symbol];
-    }
+            occurences_sum_ = SYMBOL_AMOUNT;
 
-    auto scale_to(std::size_t symbol)
-    {
-        return scale_to_[symbol];
-    }
+            calculate_scale();
+        }
 
-    void update(std::size_t symbol)
-    {
-        occurence_[symbol]++;
-        occurences_sum_++;
+        auto size()
+        {
+            return occurence_.size();
+        }
 
-        calculate_scale();
-    }
-};
+        auto occurences_sum()
+        {
+            return occurences_sum_;
+        }
+
+        auto scale_from(uint32_t symbol)
+        {
+            return scale_from_[symbol];
+        }
+
+        auto scale_to(uint32_t symbol)
+        {
+            return scale_to_[symbol];
+        }
+
+        void update(uint32_t symbol)
+        {
+            occurence_[symbol]++;
+            occurences_sum_++;
+
+            calculate_scale();
+        }
+
+        void update(const cache& cache)
+        {
+            for (uint32_t symbol {}; symbol < SYMBOL_AMOUNT; ++symbol) {
+                occurence_[symbol] += cache.occurence_delta_[symbol];
+            }
+
+            occurences_sum_ += cache.occurences_sum_;
+            calculate_scale();
+        }
+    };
+}
 
 inline auto entropy(const std::vector<unsigned char>& set) -> double
 {
@@ -151,7 +174,8 @@ inline auto encode(const std::vector<unsigned char>& input_vector) -> std::vecto
 {
     std::vector<unsigned char> output_vector {};
 
-    adaptive_model model {};
+    adaptive::model model {};
+    adaptive::cache cache {};
 
     uint64_t a = 0;
     uint64_t b = WHOLE_INTERVAL;
@@ -160,7 +184,7 @@ inline auto encode(const std::vector<unsigned char>& input_vector) -> std::vecto
     std::vector<bool> bool_vector {};
     for (auto byte : input_vector) {
 
-        std::size_t symbol = byte;
+        uint32_t symbol = byte;
         uint64_t w = b - a;
         b = a + (w * model.scale_to(symbol) / model.occurences_sum());
         a = a + (w * model.scale_from(symbol) / model.occurences_sum());
@@ -198,7 +222,11 @@ inline auto encode(const std::vector<unsigned char>& input_vector) -> std::vecto
             b *= 2;
         }
 
-        model.update(symbol);
+        cache.update(symbol);
+        if (cache.occurences_sum_ == BLOCK_SIZE) {
+            model.update(cache);
+            cache = adaptive::cache {};
+        }
     }
 
     // skonczyly sie znaki ale przedzial musi osiagnac odpowiednia dlugosc
@@ -229,7 +257,8 @@ inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amou
         return output_vector;
     }
 
-    adaptive_model model {};
+    adaptive::model model {};
+    adaptive::cache cache {};
 
     std::vector<bool> bool_vector = vector_cast(input_vector);
 
@@ -274,7 +303,11 @@ inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amou
                 a = sym_from;
                 b = sym_to;
 
-                model.update(decoded_symbol);
+                cache.update(symbol);
+                if (cache.occurences_sum_ == BLOCK_SIZE) {
+                    model.update(cache);
+                    cache = adaptive::cache {};
+                }
 
                 if (output_vector.size() == amount_to_decode) {
                     return output_vector;
