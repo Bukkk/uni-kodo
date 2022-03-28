@@ -18,8 +18,8 @@ namespace {
 }
 
 namespace adaptive {
-    static inline constexpr uint64_t MAX_OCCURENCE = QUARTER_INTERVAL - 1;
-    static inline constexpr uint64_t SYMBOL_AMOUNT = 256;
+    inline constexpr uint64_t MAX_OCCURENCE = QUARTER_INTERVAL - 1;
+    inline constexpr uint64_t SYMBOL_AMOUNT = 256;
 
     struct cache {
         std::array<uint64_t, SYMBOL_AMOUNT> occurence_delta_ {};
