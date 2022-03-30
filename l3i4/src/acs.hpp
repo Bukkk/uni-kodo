@@ -155,7 +155,7 @@ inline auto encode(const std::vector<unsigned char>& input_vector) -> std::vecto
 
     uint64_t a = 0;
     uint64_t b = WHOLE_INTERVAL;
-    uint64_t licznik = 0; // jak na wykladzie -- nie moge wymyslec lepszej nazwy
+    uint64_t licznik = 0; // jak na wykladzie -- nie moge wymyslic lepszej nazwy
 
     std::vector<bool> bool_vector {};
     for (auto byte : input_vector) {
