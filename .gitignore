@@ -1,5 +1,6 @@
 build/
 debug/
 testy/
+data/
 .cache/
 .vscode/
