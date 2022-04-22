@@ -9,7 +9,7 @@
 #include <vector>
 
 // TODO: zastanow sie jak to ulepszyc, zobacz czego brakuje w meta i ma byc jedna wersja
-
+// TODO: nie ma typu boolean -- optow bezargumentowych, ani wielo argumentowych
 namespace utils {
 
 namespace {
@@ -33,6 +33,27 @@ namespace {
                 return false;
             }
 
+            while (i + 1 < static_cast<std::size_t>(argc)) {
+                std::string arg { argv[i + 1] };
+
+                auto found = std::find_if(optionals_.begin(), optionals_.end(),
+                    [&arg](const optional_arg& opt) {
+                        return opt.symbol == arg;
+                    });
+
+                if (found != optionals_.end()) {
+                    ++i;
+                    if (!(i + 1 < static_cast<std::size_t>(argc))) {
+                        throw std::runtime_error { "oczekiwano wartosci argumentu: " + arg };
+                    }
+
+                    found->write_to = std::string { argv[i + 1] };
+                } else {
+                    // nie znaleziono takiego arga
+                    throw std::runtime_error { "nieznany argument: " + arg };
+                }
+            }
+
             return true;
         }
 
@@ -54,7 +75,7 @@ namespace {
         struct optional_arg {
             std::string& write_to;
 
-            // TODO na meta tutaj mi starczy
+            std::string symbol;
         };
 
         auto set_optional(optional_arg arg) -> optional_arg&
@@ -70,84 +91,84 @@ namespace {
     };
 }
 
-namespace old {
+// namespace old {
 
-    class args_helper {
-        std::vector<std::string> found_positional_ {};
-        std::vector<std::string> requested_option_ {};
-        std::vector<std::string> requested_boolean_ {};
+//     class args_helper {
+//         std::vector<std::string> found_positional_ {};
+//         std::vector<std::string> requested_option_ {};
+//         std::vector<std::string> requested_boolean_ {};
 
-        mutable std::unordered_map<std::string, std::string> option_ {};
-        mutable std::unordered_map<std::string, bool> boolean_ {};
+//         mutable std::unordered_map<std::string, std::string> option_ {};
+//         mutable std::unordered_map<std::string, bool> boolean_ {};
 
-        std::string help_page_ {};
+//         std::string help_page_ {};
 
-    public:
-        args_helper(std::vector<std::string> options, std::vector<std::string> booleans, std::string help_page)
-            : requested_option_(options)
-            , requested_boolean_(booleans)
-            , help_page_(help_page)
-        {
-        }
+//     public:
+//         args_helper(std::vector<std::string> options, std::vector<std::string> booleans, std::string help_page)
+//             : requested_option_(options)
+//             , requested_boolean_(booleans)
+//             , help_page_(help_page)
+//         {
+//         }
 
-        void parse(int argc, char** argv)
-        {
-            int i { 1 };
-            while (i < argc) {
-                std::string arg { argv[i] };
+//         void parse(int argc, char** argv)
+//         {
+//             int i { 1 };
+//             while (i < argc) {
+//                 std::string arg { argv[i] };
 
-                if (arg.size() > 0 && arg[0] == '-') {
+//                 if (arg.size() > 0 && arg[0] == '-') {
 
-                    if (std::find(requested_boolean_.begin(), requested_boolean_.end(), arg) != requested_boolean_.end()) {
-                        boolean_[arg] = true;
+//                     if (std::find(requested_boolean_.begin(), requested_boolean_.end(), arg) != requested_boolean_.end()) {
+//                         boolean_[arg] = true;
 
-                        ++i;
-                        continue;
-                    }
+//                         ++i;
+//                         continue;
+//                     }
 
-                    if (i + 1 < argc) {
-                        std::string next_arg { argv[i + 1] };
+//                     if (i + 1 < argc) {
+//                         std::string next_arg { argv[i + 1] };
 
-                        if (std::find(requested_option_.begin(), requested_option_.end(), arg) != requested_option_.end()) {
-                            option_[arg] = next_arg;
+//                         if (std::find(requested_option_.begin(), requested_option_.end(), arg) != requested_option_.end()) {
+//                             option_[arg] = next_arg;
 
-                            i += 2;
-                            continue;
-                        }
-                    }
+//                             i += 2;
+//                             continue;
+//                         }
+//                     }
 
-                    // nie odnaleziono argumentu
-                    throw std::runtime_error("nie odnaleziono opcji \'" + arg + "\'");
-                } else if (arg.size() > 0) {
-                    found_positional_.push_back(arg);
-                    ++i;
-                    continue;
-                }
+//                     // nie odnaleziono argumentu
+//                     throw std::runtime_error("nie odnaleziono opcji \'" + arg + "\'");
+//                 } else if (arg.size() > 0) {
+//                     found_positional_.push_back(arg);
+//                     ++i;
+//                     continue;
+//                 }
 
-                throw std::runtime_error("blad parsowania \'" + arg + "\'");
-            }
-        }
+//                 throw std::runtime_error("blad parsowania \'" + arg + "\'");
+//             }
+//         }
 
-        auto positional_args() const -> const std::vector<std::string>&
-        {
-            return found_positional_;
-        }
+//         auto positional_args() const -> const std::vector<std::string>&
+//         {
+//             return found_positional_;
+//         }
 
-        auto option(std::string val) const -> std::string
-        {
-            return option_.contains(val) ? option_[val] : "";
-        }
+//         auto option(std::string val) const -> std::string
+//         {
+//             return option_.contains(val) ? option_[val] : "";
+//         }
 
-        auto boolean(std::string val) const -> bool
-        {
-            return boolean_.contains(val) ? boolean_[val] : false;
-        }
+//         auto boolean(std::string val) const -> bool
+//         {
+//             return boolean_.contains(val) ? boolean_[val] : false;
+//         }
 
-        auto help() const -> const std::string&
-        {
-            return help_page_;
-        }
-    };
+//         auto help() const -> const std::string&
+//         {
+//             return help_page_;
+//         }
+//     };
 
-}
+// }
 }

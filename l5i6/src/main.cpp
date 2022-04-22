@@ -33,27 +33,48 @@ int main(int argc, char** argv)
 //         "                                             e koduj\n"
 //         "                                             d dekoduj\n" };
 
-//     args.parse(argc, argv);
+    utils::args_helper args {
+        "program do kodowania lzw kodowaniem uniwersalnym\n"
+        "\n"
+        "uzycie: program <plik do odczytania> <plik do zapisu> <tryb dzialania> [-a kodowanie] [-h help]\n"
+        "\n"
+        "\n"
+        "  <plik do odczytania>\n"
+        "  <plik do zapisu>\n"
+        "  <tryb dzialania>                        -> czy program ma kodowac czy dekodowac\n"
+        "                                             e koduj\n"
+        "                                             d dekoduj\n"
+        "  [-a kodowanie]                          -> jakie kodowanie naturalne skompresowanego pliku\n"
+        "                                             omega - eliasa omega (domyslne)\n"
+        "                                             gamma - eliasa gamma\n"
+        "                                             delta - eliasa delta\n"
+        "                                             fib - kodowanie fibonaciego\n"
+    };
 
-//     if (args.boolean("-h")) {
-//         std::cout << args.help() << '\n';
-//         return 0;
-//     }
+    std::string help {};
+    args.set_optional({.write_to=help, .symbol="-a"});
 
-//     if (args.positional_args().size() < 3) {
-//         std::cout << "musisz podac argumenty pozycyjne <plik do odczytania> <plik do zapisu> <e/d>\n";
-//         return 1;
-//     }
+    std::string input_filepath {};
+    std::string output_filepath {};
+    args.set_positional({.write_to=input_filepath});
+    args.set_positional({.write_to=output_filepath});
 
-//     auto& input_filepath = args.positional_args()[0];
-//     auto& output_filepath = args.positional_args()[1];
-//     auto& mode = args.positional_args()[2];
+    std::string mode {};
+    args.set_positional({.write_to=mode});
 
-//     if (input_filepath == output_filepath) {
-//         std::cout << "plik zrodlowy i docelowy sa takie same\n";
-//         // latwo sie da oszukac ale w 80proc przypadkow zaradzi problem
-//         return 1;
-//     }
+    std::string algorithm {};
+    args.set_optional({.write_to=algorithm, .symbol="-a"});
+
+    if (!args.parse(argc, argv)) {
+        std::cout << args.help_page();
+        return 0;
+    }
+
+    if (input_filepath == output_filepath) {
+        std::cout << "plik zrodlowy i docelowy sa takie same\n";
+        // latwo sie da oszukac ale w 80proc przypadkow zaradzi problem
+        return 1;
+    }
 
 //     using utils::vector_streams::binary::operator<<;
 //     using utils::vector_streams::binary::operator>>;
@@ -64,10 +85,10 @@ int main(int argc, char** argv)
 //     // std::cout << cv << '\n';
 //     // std::cout << "org=" << input_data.size() << " bv=" << bv.size() << " cv=" << cv.size() << '\n';
 
-//     utils::time_it<std::chrono::milliseconds> timer {};
+    utils::time_it<std::chrono::milliseconds> timer {};
 
-//     if (mode == "e") {
-//         // std::cout << "koduje\n";
+    if (mode == "e") {
+        std::cout << "koduje\n";
 
 //         std::vector<unsigned char> input_data {};
 //         std::ifstream input_file { input_filepath };
@@ -109,8 +130,8 @@ int main(int argc, char** argv)
 //             return 1;
 //         }
 
-//     } else if (mode == "d") {
-//         // std::cout << "dekoduje\n";
+    } else if (mode == "d") {
+        std::cout << "dekoduje\n";
 
 //         uint64_t to_decode {};
 //         std::vector<unsigned char> input_data {};
@@ -153,8 +174,8 @@ int main(int argc, char** argv)
 //             std::cout << "nie mozna otworzyc pliku zapisu\n";
 //             return 1;
 //         }
-//     } else {
-//         std::cout << "nie znany tryb dzialania\n";
-//         return 1;
-//     }
+    } else {
+        std::cout << "nie znany tryb dzialania\n";
+        return 1;
+    }
 }
