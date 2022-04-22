@@ -1,5 +1,7 @@
 
-#include "acs.hpp"
+// #include "coding/acs.hpp"
+#include "coding/lzw.hpp"
+#include "coding/statistics.hpp"
 
 #include "utils/args_helper.hpp"
 #include "utils/vector_streams.hpp"
@@ -76,8 +78,8 @@ int main(int argc, char** argv)
         return 1;
     }
 
-//     using utils::vector_streams::binary::operator<<;
-//     using utils::vector_streams::binary::operator>>;
+    using utils::vector_streams::binary::operator<<;
+    using utils::vector_streams::binary::operator>>;
 
 //     // std::cout << input_data << '\n';
 //     // std::vector<bool> bv = vector_cast(input_data);
@@ -90,90 +92,91 @@ int main(int argc, char** argv)
     if (mode == "e") {
         std::cout << "koduje\n";
 
-//         std::vector<unsigned char> input_data {};
-//         std::ifstream input_file { input_filepath };
-//         if (input_file) {
-//             input_file >> input_data;
+        std::vector<unsigned char> input_data {};
+        std::ifstream input_file { input_filepath };
+        if (input_file) {
+            input_file >> input_data;
 
-//             input_file.close();
-//         } else {
-//             std::cout << "nie mozna otworzyc pliku czytania\n";
-//             return 1;
-//         }
+            input_file.close();
+        } else {
+            std::cout << "nie mozna otworzyc pliku czytania\n";
+            return 1;
+        }
 
-//         timer.set();
+        timer.set();
 
-//         auto output_data = algo::encode(input_data);
+        auto output_data = algo::encode(input_data);
 
-//         auto millis = timer.measure();
+        auto millis = timer.measure();
 
-//         std::cout << "czas kodowania=" << millis << "ms\n";
-//         std::cout << "entropia pliku wejsciowego=" << algo::entropy(input_data) << '\n';
-//         std::cout << "entropia pliku wyjsciowego=" << algo::entropy(output_data) << '\n';
-//         std::cout << "srednia dlugosc kodowania kodu=" << algo::average_coding_length(output_data.size(), input_data.size()) << '\n';
-//         std::cout << "stopien kompresji kodu=" << algo::compression_ratio(output_data.size(), input_data.size()) << '\n';
+        std::cout << "czas kodowania=" << millis << "ms\n";
+        std::cout << "entropia pliku wejsciowego=" << coding::statistics::entropy(input_data) << '\n';
+        std::cout << "entropia pliku wyjsciowego=" << coding::statistics::entropy(output_data) << '\n';
+        std::cout << "srednia dlugosc kodowania kodu=" << coding::statistics::average_coding_length(output_data.size(), input_data.size()) << '\n';
+        std::cout << "stopien kompresji kodu=" << coding::statistics::compression_ratio(output_data.size(), input_data.size()) << '\n';
 
-//         std::ofstream output_file { output_filepath };
-//         if (output_file) {
-//             uint64_t to_decode = input_data.size();
-//             char buff[8];
-//             for (uint32_t i {}; i < 8; ++i) {
-//                 buff[i] = (to_decode >> i * 8) & 0xff;
-//             }
-//             output_file.write(buff, 8);
+        std::ofstream output_file { output_filepath };
+        if (output_file) {
+            // uint64_t to_decode = input_data.size();
+            // char buff[8];
+            // for (uint32_t i {}; i < 8; ++i) {
+            //     buff[i] = (to_decode >> i * 8) & 0xff;
+            // }
+            // output_file.write(buff, 8);
 
-//             output_file << output_data;
+            output_file << output_data;
 
-//             output_file.close();
-//         } else {
-//             std::cout << "nie mozna otworzyc pliku zapisu\n";
-//             return 1;
-//         }
+            output_file.close();
+        } else {
+            std::cout << "nie mozna otworzyc pliku zapisu\n";
+            return 1;
+        }
 
     } else if (mode == "d") {
         std::cout << "dekoduje\n";
 
-//         uint64_t to_decode {};
-//         std::vector<unsigned char> input_data {};
-//         std::ifstream input_file { input_filepath };
-//         if (input_file) {
-//             char buff[8];
-//             input_file.read(buff, 8);
-//             for (uint32_t i {}; i < 8; ++i) {
-//                 to_decode |= ((uint64_t)buff[i] & 0xff) << 8 * i;
-//             }
+        // uint64_t to_decode {};
+        std::vector<unsigned char> input_data {};
+        std::ifstream input_file { input_filepath };
+        if (input_file) {
+            // char buff[8];
+            // input_file.read(buff, 8);
+            // for (uint32_t i {}; i < 8; ++i) {
+            //     to_decode |= ((uint64_t)buff[i] & 0xff) << 8 * i;
+            // }
 
-//             input_file >> input_data;
+            input_file >> input_data;
 
-//             input_file.close();
-//         } else {
-//             std::cout << "nie mozna otworzyc pliku czytania\n";
-//             return 1;
-//         }
+            input_file.close();
+        } else {
+            std::cout << "nie mozna otworzyc pliku czytania\n";
+            return 1;
+        }
 
-//         timer.set();
+        timer.set();
 
-//         auto output_data = algo::decode(input_data, to_decode);
+        // auto output_data = algo::decode(input_data, to_decode);
+        auto output_data = algo::decode(input_data);
 
-//         auto millis = timer.measure();
+        auto millis = timer.measure();
 
 // //         std::cout << output_data << "<koniec pliku>---------------\n";
 
-//         std::cout << "czas dekodownia=" << millis << "ms\n";
-//         std::cout << "entropia pliku wejsciowego=" << algo::entropy(input_data) << '\n';
-//         std::cout << "entropia pliku wyjsciowego=" << algo::entropy(output_data) << '\n';
-//         std::cout << "srednia dlugosc kodowania kodu=" << algo::average_coding_length(input_data.size(), output_data.size()) << '\n';
-//         std::cout << "stopien kompresji kodu=" << algo::compression_ratio(input_data.size(), output_data.size()) << '\n';
+        std::cout << "czas dekodownia=" << millis << "ms\n";
+        std::cout << "entropia pliku wejsciowego=" << coding::statistics::entropy(input_data) << '\n';
+        std::cout << "entropia pliku wyjsciowego=" << coding::statistics::entropy(output_data) << '\n';
+        std::cout << "srednia dlugosc kodowania kodu=" << coding::statistics::average_coding_length(input_data.size(), output_data.size()) << '\n';
+        std::cout << "stopien kompresji kodu=" << coding::statistics::compression_ratio(input_data.size(), output_data.size()) << '\n';
 
-//         std::ofstream output_file { output_filepath };
-//         if (output_file) {
-//             output_file << output_data;
+        std::ofstream output_file { output_filepath };
+        if (output_file) {
+            output_file << output_data;
 
-//             output_file.close();
-//         } else {
-//             std::cout << "nie mozna otworzyc pliku zapisu\n";
-//             return 1;
-//         }
+            output_file.close();
+        } else {
+            std::cout << "nie mozna otworzyc pliku zapisu\n";
+            return 1;
+        }
     } else {
         std::cout << "nie znany tryb dzialania\n";
         return 1;

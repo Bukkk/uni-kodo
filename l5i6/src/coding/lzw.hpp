@@ -61,7 +61,7 @@ koduje
 3 abab 5aba
 ...
 
-ale pry dekodowaniu:
+ale przy dekodowaniu:
 1 a 3a?
 2 ab 3ab 4b?
 3 abab 4ba 5ab?
@@ -72,6 +72,10 @@ bo ta 5 kazala nam odczytac pierwszy znak jako nieznany w kodzie
 KODOWANIE ELIASA gamma
 000010011
 n-1 zer potem n bitow liczby
+
+DEKODOWANIE ELIASA GAMMA
+zliczas zera czekajac na jedynke
+jak masz jedynke to ile jest zer i odczytujesz kolejnych kilka bitow jako liczbe
 
 KODOWANIE ELIASA OMEGA
 zapisz 0
@@ -111,3 +115,22 @@ jezeli roznica to 0 to dostaw jedynke
 9 100011
 10 ..
 */
+
+#include "coding/natural.hpp"
+
+#include <vector>
+
+
+namespace coding::lzw {
+
+inline auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char>
+{
+    
+}
+
+inline auto decode(const std::vector<unsigned char>& coded) -> std::vector<unsigned char>
+{
+    
+}
+
+}

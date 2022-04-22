@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace algo {
+namespace coding::acs {
 
 namespace {
     inline constexpr uint64_t BITS_PRECISION = 32;
