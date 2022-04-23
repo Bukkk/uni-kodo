@@ -47,11 +47,14 @@ namespace {
                         throw std::runtime_error { "oczekiwano wartosci argumentu: " + arg };
                     }
 
-                    found->write_to = std::string { argv[i + 1] };
+                    std::string option { argv[i + 1]};
+                    found->write_to = option;
                 } else {
                     // nie znaleziono takiego arga
                     throw std::runtime_error { "nieznany argument: " + arg };
                 }
+
+                ++i;
             }
 
             return true;
