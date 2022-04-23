@@ -1,3 +1,5 @@
+#pragma once
+
 /*
 KODOWANIE:
 0. jezeli jest cos do zakodowania
@@ -41,9 +43,13 @@ w slowniku
 
 
 DEKODOWANIE:
-w dekodowaniu jest problem taki ze o ile w kodowaniu znasz znak -> zapisujesz kod -> dodajesz do slownika
-tak tu dodajesz do slownika -> wczytujesz kod czego dodajesz do slownika -> znasz znak
-dopiero przy dekodowaniu nastepnego znaku wiesz jaki byl poprzedni w slowniku, slownik musi to uwzgledniac.
+w dekodowaniu jest problem taki ze 
+o ile w kodowaniu znasz znak -> zapisujesz kod -> dodajesz do slownika
+tak tu 
+dodajesz do slownika -> wczytujesz kod czego dodajesz do slownika -> znasz znak
+dopiero przy dekodowaniu nastepnego znaku 
+wiesz jaki byl poprzedni w slowniku, 
+slownik musi to uwzgledniac.
 
 0a 1b 2o 3w 4-
 
@@ -116,10 +122,12 @@ jezeli roznica to 0 to dostaw jedynke
 10 ..
 */
 
-#include "coding/natural.hpp"
+#include "misc.hpp"
+#include "natural.hpp"
 
 #include <cstdint>
 #include <optional>
+#include <stdexcept>
 #include <vector>
 
 namespace coding::lzw {
@@ -156,40 +164,108 @@ namespace {
             for (uint64_t i {}; i < set_.size(); ++i) {
                 const auto& bytes = set_[i];
                 if (equal_ranges(begin, end, bytes.begin(), bytes.end())) {
-                    return {i};
+                    return { i };
                 }
             }
 
             return {};
         }
+
+        auto add(const std::vector<unsigned char>& to_add)
+        {
+            set_.push_back(to_add);
+        }
     };
 
 }
 
-inline auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char>
+template <typename Encode>
+auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char>
 {
-    if (data.size() < 2) {
+    if (data.size() == 0) {
         return data;
     }
 
+    std::vector<bool> encoded {};
+    std::vector<unsigned char> c {};
+
     dictionary dict {};
 
-    auto iter = data.begin();
+    auto iter { data.begin() };
+    c.push_back(*iter++);
 
-    auto begin_contained = iter;
-    auto end_contained = iter + 1;
+    while (iter < data.end()) {
+        c.push_back(*iter++);
 
-    while (true) {
-        auto try_contain = end_contained + 1;
-        if (dict.find(begin_contained, try_contain)) {
-            end_contained = try_contain;
-            ++try_contain;
+        if (!dict.find(c.begin(), c.end())) {
+
+            auto index_opt { dict.find(c.begin(), c.end() - 1) };
+            if (!index_opt) {
+                // nie powinno. zwalony algorytm. ale lepiej sprawdzic. najwyzej usun
+                throw std::logic_error("nie powinno sie wydazyc :O");
+            }
+            auto index = *index_opt;
+
+            auto&& encoded_number = Encode(index);
+            encoded.insert(encoded.end(), encoded_number.begin(), encoded_number.end());
+            
+            dict.add(c);
+            
+            c.erase(c.begin(), c.end() - 1);
         }
     }
+
+    return coding::misc::vector_cast(encoded);
 }
 
-inline auto decode(const std::vector<unsigned char>& coded) -> std::vector<unsigned char>
+template <typename Decode>
+auto decode(const std::vector<unsigned char>& coded) -> std::vector<unsigned char>
 {
+    std::vector<unsigned char> decoded {};
+
+    dictionary dict {};
+
+    auto encoded_bits = coding::misc::vector_cast(coded);
+    auto iter = encoded_bits.begin();
+
+    auto pk_opt = Decode(iter, encoded_bits.end());
+    if (!pk_opt) {
+        throw std::runtime_error {"niepoprawnie zapisany pierwszy kod"};
+    }
+    auto pk = *pk_opt;
+
+    decoded.insert(decoded.end(), dict.set_[*pk_opt]);
+
+    while (true) {
+
+        auto k_opt = Decode(iter, encoded_bits.end());
+        if (!k_opt) {
+            break;
+        }
+        auto k = *pk_opt;
+
+
+        std::vector<unsigned char>& pc = dict.set_[pk];
+
+        if (k < dict.set_.size()) {
+            const std::vector<unsigned char>& slownik_k = dict.set_[k];
+
+            pc.insert(pc.end(), slownik_k[0]);
+            dict.add(pc);
+
+            decoded.insert(decoded.end(), slownik_k.begin(), slownik_k.end());
+        } else {
+            // tu jest ten przypadek z pierwsza == ostatnia
+            pc.insert(pc.end(), pc[0]);
+            dict.add(pc);
+
+            decoded.insert(decoded.end(), pc.begin(), pc.end());
+        }
+
+        pk = k;
+    }
+
+    return decoded;
 }
 
 }

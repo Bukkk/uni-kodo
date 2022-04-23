@@ -55,7 +55,7 @@ namespace elias_gamma {
         uint32_t zeros {};
         while (true) {
 
-            if (bits == end) {
+            if (!(bits < end)) {
                 return {};
             }
 
@@ -68,7 +68,7 @@ namespace elias_gamma {
         }
 
         for (auto i = decltype(zeros) {}; i < zeros + 1; ++i) {
-            if (bits == end) {
+            if (!(bits < end)) {
                 // tutaj moglby nawet zwracac blad bo jest wyraznie niedokonczony
                 return {};
             }
@@ -115,7 +115,7 @@ namespace elias_delta {
         uint32_t zeros {};
         while (true) {
 
-            if (bits == end) {
+            if (!(bits < end)) {
                 return {};
             }
 
@@ -129,7 +129,7 @@ namespace elias_delta {
 
         uint32_t len {};
         for (auto i = decltype(zeros) {}; i < zeros + 1; ++i) {
-            if (bits == end) {
+            if (!(bits < end)) {
                 // tutaj moglby nawet zwracac blad bo jest wyraznie niedokonczony
                 return {};
             }
@@ -143,7 +143,7 @@ namespace elias_delta {
         uint64_t decoded = 1;
 
         for (auto i = decltype(len) {}; i < len - 1; ++i) {
-            if (bits == end) {
+            if (!(bits < end)) {
                 // tutaj moglby nawet zwracac blad bo jest wyraznie niedokonczony
                 return {};
             }
@@ -219,7 +219,7 @@ namespace elias_omega {
     {
         uint64_t val = 1;
         while (true) {
-            if (bits == end) {
+            if (!(bits < end)) {
                 return {};
             }
 
@@ -230,7 +230,7 @@ namespace elias_omega {
 
             uint64_t new_val {};
             for (uint64_t i = 0; i < val + 1; ++i) {
-                if (bits == end) {
+                if (!(bits < end)) {
                     // tutaj moglby nawet zwracac blad bo jest wyraznie niedokonczony
                     return {};
                 }
@@ -344,7 +344,7 @@ namespace fibonacci {
         bool last_was_true = false;
         uint16_t index = 0;
         while (true) {
-            if (bits == end) {
+            if (!(bits < end)) {
                 return {};
             }
             bool bit = *bits;

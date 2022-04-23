@@ -1,5 +1,7 @@
 #pragma once
 
+#include "misc.hpp"
+
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -105,38 +107,6 @@ namespace adaptive {
     };
 }
 
-namespace {
-    inline auto vector_cast(const std::vector<unsigned char>& char_vector) -> std::vector<bool>
-    {
-        std::vector<bool> bool_vector {};
-        bool_vector.reserve(8 * char_vector.size());
-
-        for (std::size_t byte_id {}; byte_id < char_vector.size(); ++byte_id) {
-            for (uint32_t bit_id = 8; bit_id > 0; --bit_id) {
-                bool val = char_vector[byte_id] & (1 << (bit_id - 1));
-                bool_vector.push_back(val);
-            }
-        }
-
-        return bool_vector;
-    }
-
-    inline auto vector_cast(const std::vector<bool>& bool_vector) -> std::vector<unsigned char>
-    {
-        std::vector<unsigned char> char_vector(bool_vector.size() / 8 + (bool_vector.size() % 8 ? 1 : 0));
-
-        for (std::size_t i {}; i < bool_vector.size(); ++i) {
-            std::size_t byte_id = i / 8;
-            uint32_t bit_id = 8 - i % 8;
-
-            unsigned char val = bool_vector[i] ? (1 << (bit_id - 1)) : 0;
-            char_vector[byte_id] |= val;
-        }
-
-        return char_vector;
-    }
-}
-
 inline auto encode(const std::vector<unsigned char>& input_vector) -> std::vector<unsigned char>
 {
     std::vector<unsigned char> output_vector {};
@@ -210,7 +180,7 @@ inline auto encode(const std::vector<unsigned char>& input_vector) -> std::vecto
         }
     }
 
-    output_vector = vector_cast(bool_vector);
+    output_vector = coding::misc::vector_cast(bool_vector);
 
     return output_vector;
 }
@@ -227,7 +197,7 @@ inline auto decode(const std::vector<unsigned char>& input_vector, uint64_t amou
     adaptive::model model {};
     adaptive::cache cache {};
 
-    std::vector<bool> bool_vector = vector_cast(input_vector);
+    std::vector<bool> bool_vector = coding::misc::vector_cast(input_vector);
 
     uint64_t a = 0;
     uint64_t b = WHOLE_INTERVAL;
