@@ -33,3 +33,11 @@ elias_omega_test = executable('omega',
 )
 
 test('kodowanie omega eliasa', elias_omega_test)
+
+fibonacci_test = executable('fibonacci',
+    'natural_fibonacci.cpp',
+  
+    include_directories : src
+)
+
+test('kodowanie fibonacci', fibonacci_test)

@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <optional>
 #include <stack>
+#include <stdexcept>
 #include <vector>
 
 namespace coding::natural {
@@ -284,12 +285,52 @@ namespace fibonacci {
             return table;
         }
 
-        constexpr auto fibonacci_lookup_table
+        inline constexpr auto fibonacci_lookup_table
             = fib_lookup<uint64_t, fib_len<uint64_t>()>();
+
+        constexpr auto find_fibonacci_index(uint64_t num)
+        {
+            constexpr auto fiblen = fib_len<uint64_t>();
+
+            uint16_t index = 0;
+            while (index < 64 && index < fiblen) {
+                if (fibonacci_lookup_table[index + 1] <= num) {
+                    index = index + 1;
+                } else {
+                    break;
+                }
+            }
+
+            return index;
+        }
     }
 
     inline auto encode(uint64_t num) -> std::vector<bool>
     {
+        std::vector<bool> encoded;
+
+        uint64_t to_encode {};
+
+        auto max_index = 0;
+        while (num > 0) {
+            auto index = find_fibonacci_index(num);
+            if (index > 63) {
+                throw std::runtime_error {"za duza liczba"};
+            }
+
+            max_index = max_index >= index ? max_index : index;
+            to_encode |= decltype(to_encode){1} << index;
+            num -= fibonacci_lookup_table[index];
+        }
+
+        for (auto i = decltype(max_index) {}; i < max_index + 1; ++i) {
+            bool v =((to_encode >> i) & 0x1) != 0;
+            encoded.push_back(v);
+        }
+
+        encoded.push_back(true);
+
+        return encoded;
     }
 
     inline auto decode(
@@ -298,6 +339,30 @@ namespace fibonacci {
 
         -> std::optional<uint64_t>
     {
+        uint64_t decoded = 0;
+
+        bool last_was_true = false;
+        uint16_t index = 0;
+        while (true) {
+            if (bits == end) {
+                return {};
+            }
+            bool bit = *bits;
+            ++bits;
+
+            if (bit) {
+                if (last_was_true) {
+                    return decoded;
+                }
+
+                decoded += fibonacci_lookup_table[index];
+                last_was_true = true;
+            } else {
+                last_was_true = false;
+            }
+
+            ++index;
+        }
     }
 }
 }
