@@ -134,6 +134,7 @@ jezeli roznica to 0 to dostaw jedynke
 namespace coding::lzw {
 
 namespace {
+    inline constexpr uint32_t INDEX_OFFSET = 1;
 
     template <typename LIterBegin, typename LIterEnd, typename PIterBegin, typename PIterEnd>
     auto equal_ranges(LIterBegin lbegin, LIterEnd lend, PIterBegin pbegin, PIterEnd pend) -> bool
@@ -247,7 +248,7 @@ auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char
             }
             auto index = *index_opt;
 
-            auto&& encoded_number = NaturalCoding::encode(index + 1);
+            auto&& encoded_number = NaturalCoding::encode(index + INDEX_OFFSET);
             encoded.insert(encoded.end(), encoded_number.begin(), encoded_number.end());
 
             c.push_back(s);
@@ -263,7 +264,7 @@ auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char
 
         auto found = dict.find(c);
         if (found) {
-            auto&& encoded_number = NaturalCoding::encode(*found + 1);
+            auto&& encoded_number = NaturalCoding::encode(*found + INDEX_OFFSET);
             encoded.insert(encoded.end(), encoded_number.begin(), encoded_number.end());
 
             c.swap(rest);
@@ -274,7 +275,7 @@ auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char
         }
     }
 
-    return coding::misc::vector_cast(encoded);
+    return coding::misc::vector_cast(encoded, NaturalCoding::padding);
 }
 
 template <typename NaturalCoding>
@@ -291,7 +292,7 @@ auto decode(const std::vector<unsigned char>& coded) -> std::vector<unsigned cha
     if (!pk_opt) {
         throw std::runtime_error { "niepoprawnie zapisany pierwszy kod" };
     }
-    auto pk = *pk_opt -1;
+    auto pk = *pk_opt - INDEX_OFFSET;
 
     auto&& slownik_pk = dict.set_[pk];
     decoded.insert(decoded.end(), slownik_pk.begin(), slownik_pk.end());
@@ -302,7 +303,7 @@ auto decode(const std::vector<unsigned char>& coded) -> std::vector<unsigned cha
         if (!k_opt) {
             break;
         }
-        auto k = *k_opt - 1;
+        auto k = *k_opt - INDEX_OFFSET;
 
         std::vector<unsigned char> pc = dict.set_[pk];
 

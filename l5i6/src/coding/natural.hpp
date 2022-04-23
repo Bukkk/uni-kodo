@@ -28,6 +28,8 @@ namespace {
 }
 
 struct elias_gamma {
+    static constexpr bool padding = false;
+
     static auto encode(uint64_t num) -> std::vector<bool>
     {
         std::vector<bool> encoded;
@@ -84,6 +86,8 @@ struct elias_gamma {
 };
 
 struct elias_delta {
+    static constexpr bool padding = false;
+
     static auto encode(uint64_t num) -> std::vector<bool>
     {
         std::vector<bool> encoded;
@@ -159,6 +163,8 @@ struct elias_delta {
 };
 
 struct elias_omega {
+    static constexpr bool padding = true;
+
     static auto encode(uint64_t num) -> std::vector<bool>
     { // po prostu rozpisana rekursja aby nie allokowac rekursywnie
         std::vector<bool> encoded;
@@ -218,8 +224,6 @@ struct elias_omega {
         -> std::optional<uint64_t>
     {
         uint64_t val = 1;
-
-        bool decoded_sth = false;
         while (true) {
             if (!(bits < end)) {
                 return {};
@@ -228,12 +232,10 @@ struct elias_omega {
             if (!*bits) {
                 ++bits;
 
-                if (decoded_sth) {
-
                 return { val };
-                } else {
-                    return {}; // zero jako pierwszy bit nic nie koduje
-                }
+                // } else {
+                //     return {}; // zero jako pierwszy bit nic nie koduje
+                // }
             }
 
             uint64_t new_val {};
@@ -250,7 +252,6 @@ struct elias_omega {
             }
 
             val = new_val;
-            decoded_sth = true;
         }
     }
 };
@@ -292,6 +293,8 @@ namespace {
 }
 
 struct fibonacci {
+    static constexpr bool padding = false;
+
 private:
     constexpr static auto fibonacci_lookup_table
         = fib_lookup<uint64_t, fib_len<uint64_t>()>();
