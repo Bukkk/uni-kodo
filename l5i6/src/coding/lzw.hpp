@@ -8,7 +8,7 @@ KODOWANIE:
 2. rosnac od 1
     szukam najdluzszego poczatkowego z do zakodowania
     ktory istnieje w slowniku i pierwszego ktory nie istnieje.
-    jezeli najpiew sie skonczy tekst zanim znajde pierwszy nieistniejacy 
+    jezeli najpiew sie skonczy tekst zanim znajde pierwszy nieistniejacy
     to koduje to co ma jak w 3 ale wychodze
 
 3. koduje liczba (eliasem lub fibonaccim) najdluzszy bedacy w slowniku
@@ -20,9 +20,9 @@ KODOWANIE:
 zapisuje, nowy wpis do slowniku, tekst do zakodowania
                                  wabba-wabba-wabba-woo-woo-woo
 3                                wabba-wabba-wabba-woo-woo-woo
-najdluzszy 
-poczatkowy 
-ktory byl 
+najdluzszy
+poczatkowy
+ktory byl
 w slowniku
           5 wa
           pierwszy poczatkowy
@@ -89,7 +89,7 @@ zapisz 0
 kod 10100100010
 
 DEKODOWANIE ELIASA OMEGA
-n = 1 
+n = 1
 1|0100100010 ->
     n+1 bitow 10|100100010 -> n = 2
 1|00100010 ->
@@ -118,19 +118,78 @@ jezeli roznica to 0 to dostaw jedynke
 
 #include "coding/natural.hpp"
 
+#include <cstdint>
+#include <optional>
 #include <vector>
-
 
 namespace coding::lzw {
 
+namespace {
+
+    template <typename LIterBegin, typename LIterEnd, typename PIterBegin, typename PIterEnd>
+    auto equal_ranges(LIterBegin lbegin, LIterEnd lend, PIterBegin pbegin, PIterEnd pend) -> bool
+    {
+        while (lbegin < lend && pbegin < pend) {
+            if (*lbegin != *lend) {
+                return false;
+            }
+
+            ++lbegin;
+            ++lend;
+        }
+
+        return lbegin == lend && pbegin == pend;
+    }
+
+    struct dictionary {
+        std::vector<std::vector<unsigned char>> set_;
+
+        dictionary()
+        {
+            for (uint16_t i {}; i < 256; ++i) {
+                set_.push_back(std::vector<unsigned char> { static_cast<unsigned char>(i) });
+            }
+        }
+
+        auto find(std::vector<unsigned char>::const_iterator begin, std::vector<unsigned char>::const_iterator end) -> std::optional<uint64_t>
+        {
+            for (uint64_t i {}; i < set_.size(); ++i) {
+                const auto& bytes = set_[i];
+                if (equal_ranges(begin, end, bytes.begin(), bytes.end())) {
+                    return {i};
+                }
+            }
+
+            return {};
+        }
+    };
+
+}
+
 inline auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char>
 {
-    
+    if (data.size() < 2) {
+        return data;
+    }
+
+    dictionary dict {};
+
+    auto iter = data.begin();
+
+    auto begin_contained = iter;
+    auto end_contained = iter + 1;
+
+    while (true) {
+        auto try_contain = end_contained + 1;
+        if (dict.find(begin_contained, try_contain)) {
+            end_contained = try_contain;
+            ++try_contain;
+        }
+    }
 }
 
 inline auto decode(const std::vector<unsigned char>& coded) -> std::vector<unsigned char>
 {
-    
 }
 
 }
