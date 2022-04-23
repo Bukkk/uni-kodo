@@ -43,12 +43,12 @@ w slowniku
 
 
 DEKODOWANIE:
-w dekodowaniu jest problem taki ze 
+w dekodowaniu jest problem taki ze
 o ile w kodowaniu znasz znak -> zapisujesz kod -> dodajesz do slownika
-tak tu 
+tak tu
 dodajesz do slownika -> wczytujesz kod czego dodajesz do slownika -> znasz znak
-dopiero przy dekodowaniu nastepnego znaku 
-wiesz jaki byl poprzedni w slowniku, 
+dopiero przy dekodowaniu nastepnego znaku
+wiesz jaki byl poprzedni w slowniku,
 slownik musi to uwzgledniac.
 
 0a 1b 2o 3w 4-
@@ -128,6 +128,7 @@ jezeli roznica to 0 to dostaw jedynke
 #include <cstdint>
 #include <optional>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
 namespace coding::lzw {
@@ -138,32 +139,71 @@ namespace {
     auto equal_ranges(LIterBegin lbegin, LIterEnd lend, PIterBegin pbegin, PIterEnd pend) -> bool
     {
         while (lbegin < lend && pbegin < pend) {
-            if (*lbegin != *lend) {
+            if (*lbegin != *pbegin) {
                 return false;
             }
 
             ++lbegin;
-            ++lend;
+            ++pbegin;
         }
 
         return lbegin == lend && pbegin == pend;
     }
 
-    struct dictionary {
+    template <typename T>
+    struct vector_hash {
+        auto operator()(const std::vector<T>& vec) const -> unsigned int
+        {
+            unsigned int hash = vec.size();
+            for (const auto& it : vec) {
+                hash ^= it + (221371337 * it << 3) + (it << 24);
+            }
+
+            return hash;
+        }
+    };
+
+    struct encoding_dictionary {
+        std::unordered_map<std::vector<unsigned char>, uint64_t, vector_hash<unsigned char>> set_;
+
+        encoding_dictionary()
+        {
+            for (uint16_t i {}; i < 256; ++i) {
+                set_.insert({ std::vector<unsigned char> { static_cast<unsigned char>(i) }, i });
+            }
+        }
+
+        auto find(std::vector<unsigned char> const& vec) -> std::optional<uint64_t>
+        {
+            auto it = set_.find(vec);
+            if (it != set_.end()) {
+                return { it->second };
+            }
+
+            return {};
+        }
+
+        auto add(const std::vector<unsigned char>& to_add)
+        {
+            set_.insert({ to_add, set_.size() });
+        }
+    };
+
+    struct decoding_dictionary {
         std::vector<std::vector<unsigned char>> set_;
 
-        dictionary()
+        decoding_dictionary()
         {
             for (uint16_t i {}; i < 256; ++i) {
                 set_.push_back(std::vector<unsigned char> { static_cast<unsigned char>(i) });
             }
         }
 
-        auto find(std::vector<unsigned char>::const_iterator begin, std::vector<unsigned char>::const_iterator end) -> std::optional<uint64_t>
+        auto find(std::vector<unsigned char> const& vec) -> std::optional<uint64_t>
         {
             for (uint64_t i {}; i < set_.size(); ++i) {
                 const auto& bytes = set_[i];
-                if (equal_ranges(begin, end, bytes.begin(), bytes.end())) {
+                if (equal_ranges(vec.begin(), vec.end(), bytes.begin(), bytes.end())) {
                     return { i };
                 }
             }
@@ -189,7 +229,7 @@ auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char
     std::vector<bool> encoded {};
     std::vector<unsigned char> c {};
 
-    dictionary dict {};
+    encoding_dictionary dict {};
 
     auto iter { data.begin() };
     c.push_back(*iter++);
@@ -197,9 +237,10 @@ auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char
     while (iter < data.end()) {
         c.push_back(*iter++);
 
-        if (!dict.find(c.begin(), c.end())) {
-
-            auto index_opt { dict.find(c.begin(), c.end() - 1) };
+        if (!dict.find(c)) {
+            auto s = c.back();
+            c.pop_back();
+            auto index_opt { dict.find(c) };
             if (!index_opt) {
                 // nie powinno. zwalony algorytm. ale lepiej sprawdzic. najwyzej usun
                 throw std::logic_error("nie powinno sie wydazyc :O");
@@ -208,9 +249,10 @@ auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char
 
             auto&& encoded_number = NaturalCoding::encode(index);
             encoded.insert(encoded.end(), encoded_number.begin(), encoded_number.end());
-            
+
+            c.push_back(s);
             dict.add(c);
-            
+
             c.erase(c.begin(), c.end() - 1);
         }
     }
@@ -223,14 +265,14 @@ auto decode(const std::vector<unsigned char>& coded) -> std::vector<unsigned cha
 {
     std::vector<unsigned char> decoded {};
 
-    dictionary dict {};
+    decoding_dictionary dict {};
 
     auto encoded_bits = coding::misc::vector_cast(coded);
     auto iter = encoded_bits.cbegin();
 
     auto pk_opt = NaturalCoding::decode(iter, encoded_bits.end());
     if (!pk_opt) {
-        throw std::runtime_error {"niepoprawnie zapisany pierwszy kod"};
+        throw std::runtime_error { "niepoprawnie zapisany pierwszy kod" };
     }
     auto pk = *pk_opt;
 
@@ -245,15 +287,13 @@ auto decode(const std::vector<unsigned char>& coded) -> std::vector<unsigned cha
         }
         auto k = *k_opt;
 
-
-        std::vector<unsigned char>& pc = dict.set_[pk];
+        std::vector<unsigned char> pc = dict.set_[pk];
 
         if (k < dict.set_.size()) {
-            const std::vector<unsigned char>& slownik_k = dict.set_[k];
-
-            pc.insert(pc.end(), slownik_k[0]);
+            pc.insert(pc.end(), dict.set_[k][0]);
             dict.add(pc);
 
+            auto&& slownik_k = dict.set_[k];
             decoded.insert(decoded.end(), slownik_k.begin(), slownik_k.end());
         } else {
             // tu jest ten przypadek z pierwsza == ostatnia
