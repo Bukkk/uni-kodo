@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace algo = coding::natural::elias_gamma;
+using algo = coding::natural::elias_gamma;
 
 template <typename T>
 void assert_equal(T expected, T actual)

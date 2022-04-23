@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-namespace algo = coding::natural::elias_delta;
+using algo = coding::natural::elias_delta;
 
 template <typename T>
 void assert_equal(T expected, T actual)

@@ -179,7 +179,7 @@ namespace {
 
 }
 
-template <typename Encode>
+template <typename NaturalCoding>
 auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char>
 {
     if (data.size() == 0) {
@@ -206,7 +206,7 @@ auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char
             }
             auto index = *index_opt;
 
-            auto&& encoded_number = Encode(index);
+            auto&& encoded_number = NaturalCoding::encode(index);
             encoded.insert(encoded.end(), encoded_number.begin(), encoded_number.end());
             
             dict.add(c);
@@ -218,7 +218,7 @@ auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char
     return coding::misc::vector_cast(encoded);
 }
 
-template <typename Decode>
+template <typename NaturalCoding>
 auto decode(const std::vector<unsigned char>& coded) -> std::vector<unsigned char>
 {
     std::vector<unsigned char> decoded {};
@@ -226,23 +226,24 @@ auto decode(const std::vector<unsigned char>& coded) -> std::vector<unsigned cha
     dictionary dict {};
 
     auto encoded_bits = coding::misc::vector_cast(coded);
-    auto iter = encoded_bits.begin();
+    auto iter = encoded_bits.cbegin();
 
-    auto pk_opt = Decode(iter, encoded_bits.end());
+    auto pk_opt = NaturalCoding::decode(iter, encoded_bits.end());
     if (!pk_opt) {
         throw std::runtime_error {"niepoprawnie zapisany pierwszy kod"};
     }
     auto pk = *pk_opt;
 
-    decoded.insert(decoded.end(), dict.set_[*pk_opt]);
+    auto&& slownik_pk = dict.set_[pk];
+    decoded.insert(decoded.end(), slownik_pk.begin(), slownik_pk.end());
 
     while (true) {
 
-        auto k_opt = Decode(iter, encoded_bits.end());
+        auto k_opt = NaturalCoding::decode(iter, encoded_bits.end());
         if (!k_opt) {
             break;
         }
-        auto k = *pk_opt;
+        auto k = *k_opt;
 
 
         std::vector<unsigned char>& pc = dict.set_[pk];

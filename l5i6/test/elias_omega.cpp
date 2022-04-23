@@ -5,7 +5,7 @@
 #include <string>
 // #include <iostream>
 
-namespace algo = coding::natural::elias_omega;
+using algo = coding::natural::elias_omega;
 
 template <typename T>
 void assert_equal(T expected, T actual)

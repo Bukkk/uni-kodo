@@ -105,7 +105,8 @@ int main(int argc, char** argv)
 
         timer.set();
 
-        auto output_data = coding::lzw::encode(input_data);
+        using namespace coding;
+        auto output_data = lzw::encode<natural::elias_gamma>(input_data);
 
         auto millis = timer.measure();
 
@@ -155,8 +156,8 @@ int main(int argc, char** argv)
 
         timer.set();
 
-        // auto output_data = algo::decode(input_data, to_decode);
-        auto output_data = coding::lzw::decode(input_data);
+        using namespace coding;
+        auto output_data = lzw::decode<natural::elias_gamma>(input_data);
 
         auto millis = timer.measure();
 

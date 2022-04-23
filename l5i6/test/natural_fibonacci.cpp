@@ -5,7 +5,7 @@
 #include <string>
 #include <iostream>
 
-namespace algo = coding::natural::fibonacci;
+using algo = coding::natural::fibonacci;
 
 template <typename T>
 void assert_equal(T expected, T actual)

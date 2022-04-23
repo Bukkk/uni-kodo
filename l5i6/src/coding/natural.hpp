@@ -27,8 +27,8 @@ namespace {
     }
 }
 
-namespace elias_gamma {
-    inline auto encode(uint64_t num) -> std::vector<bool>
+struct elias_gamma {
+    static auto encode(uint64_t num) -> std::vector<bool>
     {
         std::vector<bool> encoded;
 
@@ -44,7 +44,7 @@ namespace elias_gamma {
         return encoded;
     }
 
-    inline auto decode(
+    static auto decode(
         std::vector<bool>::const_iterator& bits,
         const std::vector<bool>::const_iterator end)
 
@@ -81,10 +81,10 @@ namespace elias_gamma {
 
         return { decoded };
     }
-}
+};
 
-namespace elias_delta {
-    inline auto encode(uint64_t num) -> std::vector<bool>
+struct elias_delta {
+    static auto encode(uint64_t num) -> std::vector<bool>
     {
         std::vector<bool> encoded;
 
@@ -106,7 +106,7 @@ namespace elias_delta {
         return encoded;
     }
 
-    inline auto decode(
+    static auto decode(
         std::vector<bool>::const_iterator& bits,
         const std::vector<bool>::const_iterator end)
 
@@ -156,10 +156,10 @@ namespace elias_delta {
 
         return decoded;
     }
-}
+};
 
-namespace elias_omega {
-    inline auto encode(uint64_t num) -> std::vector<bool>
+struct elias_omega {
+    static auto encode(uint64_t num) -> std::vector<bool>
     { // po prostu rozpisana rekursja aby nie allokowac rekursywnie
         std::vector<bool> encoded;
 
@@ -211,7 +211,7 @@ namespace elias_omega {
         return encoded;
     }
 
-    inline auto decode(
+    static auto decode(
         std::vector<bool>::const_iterator& bits,
         const std::vector<bool>::const_iterator end)
 
@@ -246,66 +246,68 @@ namespace elias_omega {
 
         return { val };
     }
-}
+};
 
-namespace fibonacci {
+namespace {
+template <typename T>
+    constexpr auto fib_len()
+    {
+        T fib1 = 1;
+        T fib2 = 2;
 
-    namespace {
-        template <typename T>
-        constexpr auto fib_len()
-        {
-            T fib1 = 1;
-            T fib2 = 2;
+        auto i = 2;
+        while (true) {
+            T fib = fib2 + fib1;
 
-            auto i = 2;
-            while (true) {
-                T fib = fib2 + fib1;
-
-                if (fib < fib2) {
-                    return i;
-                }
-
-                ++i;
-                fib1 = fib2;
-                fib2 = fib;
-            }
-        }
-
-        template <typename T, uint16_t N>
-        constexpr auto fib_lookup() -> std::array<T, N>
-        {
-            std::array<T, N> table {};
-            table[0] = 1;
-            table[1] = 2;
-
-            for (auto i = 2; i < N; ++i) {
-                table[i] = table[i - 1] + table[i - 2];
+            if (fib < fib2) {
+                return i;
             }
 
-            return table;
-        }
-
-        inline constexpr auto fibonacci_lookup_table
-            = fib_lookup<uint64_t, fib_len<uint64_t>()>();
-
-        constexpr auto find_fibonacci_index(uint64_t num)
-        {
-            constexpr auto fiblen = fib_len<uint64_t>();
-
-            uint16_t index = 0;
-            while (index < 64 && index < fiblen) {
-                if (fibonacci_lookup_table[index + 1] <= num) {
-                    index = index + 1;
-                } else {
-                    break;
-                }
-            }
-
-            return index;
+            ++i;
+            fib1 = fib2;
+            fib2 = fib;
         }
     }
 
-    inline auto encode(uint64_t num) -> std::vector<bool>
+    template <typename T, uint16_t N>
+    constexpr auto fib_lookup() -> std::array<T, N>
+    {
+        std::array<T, N> table {};
+        table[0] = 1;
+        table[1] = 2;
+
+        for (auto i = 2; i < N; ++i) {
+            table[i] = table[i - 1] + table[i - 2];
+        }
+
+        return table;
+    }
+}
+
+struct fibonacci {
+private:
+    constexpr static auto fibonacci_lookup_table
+        = fib_lookup<uint64_t, fib_len<uint64_t>()>();
+
+    static auto find_fibonacci_index(uint64_t num) -> uint16_t
+    {
+        // dla 64bit nawet sie nie wygeneruje
+        constexpr static auto fiblen = fib_len<uint64_t>();
+
+        uint16_t index = 0;
+        while (index < 64 && index < fiblen) {
+            if (fibonacci_lookup_table[index + 1] <= num) {
+                index = index + 1;
+            } else {
+                break;
+            }
+        }
+
+        return index;
+    }
+
+public:
+    static auto encode(uint64_t num) -> std::vector<bool>
     {
         std::vector<bool> encoded;
 
@@ -333,7 +335,7 @@ namespace fibonacci {
         return encoded;
     }
 
-    inline auto decode(
+    static auto decode(
         std::vector<bool>::const_iterator& bits,
         const std::vector<bool>::const_iterator end)
 
@@ -364,5 +366,6 @@ namespace fibonacci {
             ++index;
         }
     }
-}
+};
+
 }
