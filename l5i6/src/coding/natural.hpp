@@ -218,6 +218,8 @@ struct elias_omega {
         -> std::optional<uint64_t>
     {
         uint64_t val = 1;
+
+        bool decoded_sth = false;
         while (true) {
             if (!(bits < end)) {
                 return {};
@@ -225,7 +227,13 @@ struct elias_omega {
 
             if (!*bits) {
                 ++bits;
-                break;
+
+                if (decoded_sth) {
+
+                return { val };
+                } else {
+                    return {}; // zero jako pierwszy bit nic nie koduje
+                }
             }
 
             uint64_t new_val {};
@@ -242,14 +250,13 @@ struct elias_omega {
             }
 
             val = new_val;
+            decoded_sth = true;
         }
-
-        return { val };
     }
 };
 
 namespace {
-template <typename T>
+    template <typename T>
     constexpr auto fib_len()
     {
         T fib1 = 1;
@@ -317,16 +324,16 @@ public:
         while (num > 0) {
             auto index = find_fibonacci_index(num);
             if (index > 63) {
-                throw std::runtime_error {"za duza liczba"};
+                throw std::runtime_error { "za duza liczba" };
             }
 
             max_index = max_index >= index ? max_index : index;
-            to_encode |= decltype(to_encode){1} << index;
+            to_encode |= decltype(to_encode) { 1 } << index;
             num -= fibonacci_lookup_table[index];
         }
 
         for (auto i = decltype(max_index) {}; i < max_index + 1; ++i) {
-            bool v =((to_encode >> i) & 0x1) != 0;
+            bool v = ((to_encode >> i) & 0x1) != 0;
             encoded.push_back(v);
         }
 

@@ -1,7 +1,14 @@
 #!/usr/bin bash
+for file in data/*
+do
+
 for algo in {gamma,omega,delta,fib}
 do
-        ./release/src/lzw data/pan-tadeusz-czyli-ostatni-zajazd-na-litwie.txt smieci/tad_${algo}.enc e -a ${algo}
-        ./release/src/lzw smieci/tad_${algo}.enc smieci/tad_${algo}.dec d -a ${algo}
+        echo ${file}
+        ./release/src/lzw ${file} smieci/${file}_${algo}.enc e -a ${algo}
+        ./release/src/lzw smieci/${file}_${algo}.enc smieci/${file}_${algo}.dec d -a ${algo}
+        diff ${file} smieci/${file}_${algo}.dec
         echo
+done
+
 done

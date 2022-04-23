@@ -247,7 +247,7 @@ auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char
             }
             auto index = *index_opt;
 
-            auto&& encoded_number = NaturalCoding::encode(index);
+            auto&& encoded_number = NaturalCoding::encode(index + 1);
             encoded.insert(encoded.end(), encoded_number.begin(), encoded_number.end());
 
             c.push_back(s);
@@ -263,7 +263,7 @@ auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char
 
         auto found = dict.find(c);
         if (found) {
-            auto&& encoded_number = NaturalCoding::encode(*found);
+            auto&& encoded_number = NaturalCoding::encode(*found + 1);
             encoded.insert(encoded.end(), encoded_number.begin(), encoded_number.end());
 
             c.swap(rest);
@@ -291,7 +291,7 @@ auto decode(const std::vector<unsigned char>& coded) -> std::vector<unsigned cha
     if (!pk_opt) {
         throw std::runtime_error { "niepoprawnie zapisany pierwszy kod" };
     }
-    auto pk = *pk_opt;
+    auto pk = *pk_opt -1;
 
     auto&& slownik_pk = dict.set_[pk];
     decoded.insert(decoded.end(), slownik_pk.begin(), slownik_pk.end());
@@ -302,7 +302,7 @@ auto decode(const std::vector<unsigned char>& coded) -> std::vector<unsigned cha
         if (!k_opt) {
             break;
         }
-        auto k = *k_opt;
+        auto k = *k_opt - 1;
 
         std::vector<unsigned char> pc = dict.set_[pk];
 
