@@ -257,6 +257,23 @@ auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char
         }
     }
 
+    decltype(c) rest {};
+    while (c.size() != 0) {
+        // throw std::runtime_error {"soidoufnaelik"}; // nie zapisuje wszystkich
+
+        auto found = dict.find(c);
+        if (found) {
+            auto&& encoded_number = NaturalCoding::encode(*found);
+            encoded.insert(encoded.end(), encoded_number.begin(), encoded_number.end());
+
+            c.swap(rest);
+            rest.clear();
+        } else {
+            rest.insert(rest.begin(), c.back());
+            c.pop_back();
+        }
+    }
+
     return coding::misc::vector_cast(encoded);
 }
 
