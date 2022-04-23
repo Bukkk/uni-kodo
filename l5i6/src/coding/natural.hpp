@@ -98,7 +98,7 @@ namespace elias_delta {
             encoded.push_back(((num_len >> (len_len - i - 1)) & 0x1) != 0);
         }
 
-        for (auto i = decltype(num_len) {}; i < num_len - 1; ++i) {
+        for (auto i = decltype(num_len) { 1 }; i < num_len; ++i) {
             encoded.push_back(((num >> (num_len - i - 1)) & 0x1) != 0);
         }
 
@@ -161,28 +161,48 @@ namespace elias_omega {
     inline auto encode(uint64_t num) -> std::vector<bool>
     { // po prostu rozpisana rekursja aby nie allokowac rekursywnie
         std::vector<bool> encoded;
-        std::stack<uint16_t> lengths;
 
-        uint16_t len = bit_length(num);
-        uint16_t x = len - 1;
-        while (x != 1) {
-            lengths.push(x);
+        if (num > 1) {
+            // max 64biy min 1
+            uint16_t num_len = bit_length(num); // 64 1
 
-            uint16_t next_x = bit_length(x) - 1;
-            x = next_x;
-        }
+            // uint16_t x1 = num_len - 1; //63
+            // uint16_t x1_len = bit_length(x1); //5
 
-        while (!lengths.empty()) {
-            auto y = lengths.top();
-            auto y_len = bit_length(y);
-            for (auto i = decltype(y_len) {}; i < y_len; ++i) {
-                encoded.push_back(((y >> (y_len - i - 1)) & 0x1) != 0);
+            // uint16_t x2 = x1_len - 1; //4
+            // uint16_t x2_len = bit_length(x2); //3
+
+            // uint16_t x3 = x2_len - 1; // 2
+            // uint16_t x3_len = bit_length(x3); // 2
+
+            std::array<uint16_t, 3> prefixes {};
+            std::array<uint16_t, 3> lengths {};
+
+            uint16_t x = num_len - 1;
+            uint16_t i = 0;
+            while (x != 1) {
+                prefixes[i] = x;
+                auto length = bit_length(x);
+                lengths[i] = length;
+                x = length - 1;
+                ++i;
             }
-            lengths.pop();
-        }
 
-        for (auto i = decltype(len) {}; i < len; ++i) {
-            encoded.push_back(((num >> (len - i - 1)) & 0x1) != 0);
+            while (i > 0) {
+                if (prefixes[i - 1] >= 2) {
+                    auto write = prefixes[i - 1];
+                    auto write_len = lengths[i - 1];
+                    for (auto j = decltype(write_len) {}; j < write_len; ++j) {
+                        encoded.push_back(((write >> (write_len - j - 1)) & 0x1) != 0);
+                    }
+                }
+
+                --i;
+            }
+
+            for (auto i = decltype(num_len) {}; i < num_len; ++i) {
+                encoded.push_back(((num >> (num_len - i - 1)) & 0x1) != 0);
+            }
         }
 
         encoded.push_back(false);
@@ -203,6 +223,7 @@ namespace elias_omega {
             }
 
             if (!*bits) {
+                ++bits;
                 break;
             }
 
@@ -268,8 +289,7 @@ namespace fibonacci {
     }
 
     inline auto encode(uint64_t num) -> std::vector<bool>
-    {   
-
+    {
     }
 
     inline auto decode(

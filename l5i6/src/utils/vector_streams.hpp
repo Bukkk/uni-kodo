@@ -64,7 +64,7 @@ namespace serialization {
         ost << "[";
 
         bool first = true;
-        for (auto& it : vec) {
+        for (const auto& it : vec) {
             if (first) {
                 first = false;
 

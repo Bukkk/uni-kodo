@@ -1,11 +1,9 @@
-utils = include_directories('../src/utils')
-coding = include_directories('../src/coding')
 src = include_directories('../src')
 
 args_test = executable('args',
     'args.cpp',
   
-    include_directories : utils
+    include_directories : src
 )
 
 test('test modulu parsowania argumentow', args_test,
