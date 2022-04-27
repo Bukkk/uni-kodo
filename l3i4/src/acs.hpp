@@ -222,6 +222,7 @@ inline auto encode(const std::vector<unsigned char>& input_vector) -> std::vecto
             b *= 2;
         }
 
+        // model.update(symbol);
         cache.update(symbol);
         if (cache.occurences_sum_ == BLOCK_SIZE) {
             model.update(cache);

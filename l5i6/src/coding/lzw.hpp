@@ -242,10 +242,10 @@ auto encode(const std::vector<unsigned char>& data) -> std::vector<unsigned char
             auto s = c.back();
             c.pop_back();
             auto index_opt { dict.find(c) };
-            if (!index_opt) {
-                // nie powinno. zwalony algorytm. ale lepiej sprawdzic. najwyzej usun
-                throw std::logic_error("nie powinno sie wydazyc :O");
-            }
+            // if (!index_opt) {
+            //     // nie powinno. zwalony algorytm. ale lepiej sprawdzic. najwyzej usun
+            //     throw std::logic_error("nie powinno sie wydazyc :O");
+            // }
             auto index = *index_opt;
 
             auto&& encoded_number = NaturalCoding::encode(index + INDEX_OFFSET);
