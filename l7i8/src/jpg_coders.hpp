@@ -11,8 +11,8 @@ struct predictor_1 {
     static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
     {
         uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-        // uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-        // uint8_t nw = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+        // uint8_t n = acc.check_range(x, y + 1) ? acc[acc.nth(x, y + 1)] : 0;
+        // uint8_t nw = acc.check_range(x - 1, y + 1) ? acc[acc.nth(x - 1, y + 1)] : 0;
 
         return w;
     }
@@ -20,93 +20,86 @@ struct predictor_1 {
 
 struct predictor_2 {
     static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
-{
-    // uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    // uint8_t nw = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+    {
+        // uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+        uint8_t n = acc.check_range(x, y + 1) ? acc[acc.nth(x, y + 1)] : 0;
+        // uint8_t nw = acc.check_range(x - 1, y + 1) ? acc[acc.nth(x - 1, y + 1)] : 0;
 
-    return n;
-}
+        return n;
+    }
 };
-
 
 struct predictor_3 {
     static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
-{
-    // uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    // uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    uint8_t nw = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+    {
+        // uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+        // uint8_t n = acc.check_range(x, y + 1) ? acc[acc.nth(x, y + 1)] : 0;
+        uint8_t nw = acc.check_range(x - 1, y + 1) ? acc[acc.nth(x - 1, y + 1)] : 0;
 
-    return nw;
-}
+        return nw;
+    }
 };
-
 
 struct predictor_4 {
     static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
-{
-    uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    uint8_t nw = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+    {
+        uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+        uint8_t n = acc.check_range(x, y + 1) ? acc[acc.nth(x, y + 1)] : 0;
+        uint8_t nw = acc.check_range(x - 1, y + 1) ? acc[acc.nth(x - 1, y + 1)] : 0;
 
-    return n + w - nw;
-}
+        return n + w - nw;
+    }
 };
-
 
 struct predictor_5 {
     static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
-{
-    uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    uint8_t nw = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+    {
+        uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+        uint8_t n = acc.check_range(x, y + 1) ? acc[acc.nth(x, y + 1)] : 0;
+        uint8_t nw = acc.check_range(x - 1, y + 1) ? acc[acc.nth(x - 1, y + 1)] : 0;
 
-    return n + (w - nw) / 2;
-}
+        return n + (w - nw) / 2;
+    }
 };
-
 
 struct predictor_6 {
     static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
-{
-    uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    uint8_t nw = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+    {
+        uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+        uint8_t n = acc.check_range(x, y + 1) ? acc[acc.nth(x, y + 1)] : 0;
+        uint8_t nw = acc.check_range(x - 1, y + 1) ? acc[acc.nth(x - 1, y + 1)] : 0;
 
-    return w + (n - nw) / 2;
-}
+        return w + (n - nw) / 2;
+    }
 };
-
 
 struct predictor_7 {
     static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
-{
-    uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    // uint8_t nw = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+    {
+        uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+        uint8_t n = acc.check_range(x, y + 1) ? acc[acc.nth(x, y + 1)] : 0;
+        // uint8_t nw = acc.check_range(x - 1, y + 1) ? acc[acc.nth(x - 1, y + 1)] : 0;
 
-    return (n + w) / 2;
-}
+        return (n + w) / 2;
+    }
 };
-
 
 struct predictor_new {
     static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
-{
-    uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    uint8_t nw = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+    {
+        uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+        uint8_t n = acc.check_range(x, y + 1) ? acc[acc.nth(x, y + 1)] : 0;
+        uint8_t nw = acc.check_range(x - 1, y + 1) ? acc[acc.nth(x - 1, y + 1)] : 0;
 
-    if (nw >= std::max(w, n)) {
-        return std::max(w, n);
-    } else if (nw <= std::min(w, n)) {
-        return std::min(w, n);
+        if (nw >= std::max(w, n)) {
+            return std::max(w, n);
+        } else if (nw <= std::min(w, n)) {
+            return std::min(w, n);
+        }
+
+        return w + n - nw;
     }
-
-    return w + n - nw;
-}
 };
-
 
 template <typename Predictor>
 auto encode(tga::accessor_MONO const& acc)

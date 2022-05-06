@@ -189,7 +189,8 @@ struct image {
         if (iter + _header._image_descriptor >= data.end()) {
             throw std::runtime_error { "mniej danych niz wskazuje _header._image_descriptor" };
         }
-        std::vector<uint8_t> image_descriptor(iter, iter = iter + _header._image_descriptor);
+        std::vector<uint8_t> image_descriptor(iter, iter + _header._image_descriptor);
+        iter += _header._image_descriptor;
 
         size_t colmap_elem_size = _header._color_map_entry_size / 8;
         size_t colmap_size = _header._color_map_length * colmap_elem_size;
@@ -199,7 +200,8 @@ struct image {
             if (iter + colmap_size > data.end()) {
                 throw std::runtime_error { "mniej danych niz wskazuje colmap_size" };
             }
-            colmap = std::vector<uint8_t>(iter, iter = iter + colmap_size);
+            colmap = std::vector<uint8_t>(iter, iter + colmap_size);
+            iter += colmap_size;
         }
 
         size_t bytes_per_pixel = _header._color_map_length == 0 ? (_header._bits / 8) : colmap_elem_size;
@@ -209,7 +211,8 @@ struct image {
         if (iter + data_size > data.end()) {
             throw std::runtime_error { "mniej danych niz wskazuje data_size" };
         }
-        std::vector<uint8_t> buffer(iter, iter = iter + data_size);
+        std::vector<uint8_t> buffer(iter, iter + data_size);
+        iter += data_size;
 
         _data.resize(image_size);
 
@@ -374,7 +377,8 @@ struct accessor_MONO {
 
     auto check_range(uint32_t x, uint32_t y) const -> bool
     {
-        return x < _width && y < _height;
+        bool chk = x < _width && y < _height;
+        return chk;
     }
 
     auto nth(uint32_t x, uint32_t y) const -> size_t
@@ -390,7 +394,7 @@ struct accessor_MONO {
 
     auto get(uint32_t x, uint32_t y) const -> uint8_t&
     {
-        if (x < _width && y < _height) {
+        if (check_range(x, y)) {
             return _image[nth(x, y)];
         }
 

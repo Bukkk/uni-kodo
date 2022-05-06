@@ -1,12 +1,15 @@
+#include "coding/statistics.hpp"
 #include "jpg_coders.hpp"
 #include "moje_tga.hpp"
 #include "utils/args_helper.hpp"
 #include "utils/time_it.hpp"
 #include "utils/vector_streams.hpp"
-#include "coding/statistics.hpp"
 
 // #include "extern/tga.hpp"
 
+#include <algorithm>
+#include <array>
+#include <cassert>
 #include <cstdint>
 #include <fstream>
 #include <ios>
@@ -36,20 +39,19 @@ auto run_on_file(std::string const& path)
     //     throw std::runtime_error{ "format obrazu nie jest rgb"};
     // }
 
-    tga::image image {data};
+    tga::image image { data };
     std::cout << image._header << std::endl;
 
     if (image._image_format != tga::image_format::RGB) {
-        throw std::runtime_error {"obrazek nie jest w formacie rgb"};
+        throw std::runtime_error { "obrazek nie jest w formacie rgb" };
     }
 
     tga::accessor_RGB accessor { image._data, image._width, image._height };
-    auto [r_vals, g_vals, b_vals]  = tga::split_channels(accessor);
+    auto [r_vals, g_vals, b_vals] = tga::split_channels(accessor);
 
-    tga::accessor_MONO accessor_r {r_vals, image._width, image._height};
-    tga::accessor_MONO accessor_g {g_vals, image._width, image._height};
-    tga::accessor_MONO accessor_b {b_vals, image._width, image._height};
-
+    tga::accessor_MONO accessor_r { r_vals, image._width, image._height };
+    tga::accessor_MONO accessor_g { g_vals, image._width, image._height };
+    tga::accessor_MONO accessor_b { b_vals, image._width, image._height };
 
     // std::cout << "00 " << accessor.get(0, 0) << std::endl;
     // std::cout << "01 " << accessor.get(0, 1) << std::endl;
@@ -57,7 +59,6 @@ auto run_on_file(std::string const& path)
     // std::cout << "11 " << accessor.get(1, 1) << std::endl;
     // std::cout << "02 " << accessor.get(0, 2) << std::endl;
     // std::cout << "kk " << accessor.get(13, 0) << std::endl;
-
 
     // std::cout << "pd" << accessor.get(image._width - 1, 0) << std::endl;
     // std::cout << "lg" << accessor.get(0, image._height - 1) << std::endl;
@@ -99,38 +100,74 @@ auto run_on_file(std::string const& path)
     auto b_with_pred_7 = jpg_predictors::encode<jpg_predictors::predictor_7>(accessor_b);
     auto b_with_pred_new = jpg_predictors::encode<jpg_predictors::predictor_new>(accessor_b);
 
-    std::cout << std::endl;
-    std::cout << "entropia (R) dla predyktora 1=" << statistics::entropy(r_with_pred_1) << "\n";
-    std::cout << "entropia (R) dla predyktora 2=" << statistics::entropy(r_with_pred_2) << "\n";
-    std::cout << "entropia (R) dla predyktora 3=" << statistics::entropy(r_with_pred_3) << "\n";
-    std::cout << "entropia (R) dla predyktora 4=" << statistics::entropy(r_with_pred_4) << "\n";
-    std::cout << "entropia (R) dla predyktora 5=" << statistics::entropy(r_with_pred_5) << "\n";
-    std::cout << "entropia (R) dla predyktora 6=" << statistics::entropy(r_with_pred_6) << "\n";
-    std::cout << "entropia (R) dla predyktora 7=" << statistics::entropy(r_with_pred_7) << "\n";
-    std::cout << "entropia (R) dla predyktora new=" << statistics::entropy(r_with_pred_new) << "\n";
+    std::array<double, 8> r_entropies{
+        statistics::entropy(r_with_pred_1),
+        statistics::entropy(r_with_pred_2),
+        statistics::entropy(r_with_pred_3),
+        statistics::entropy(r_with_pred_4),
+        statistics::entropy(r_with_pred_5),
+        statistics::entropy(r_with_pred_6),
+        statistics::entropy(r_with_pred_7),
+        statistics::entropy(r_with_pred_new)
+    };
 
     std::cout << std::endl;
-    std::cout << "entropia (G) dla predyktora 1=" << statistics::entropy(g_with_pred_1) << "\n";
-    std::cout << "entropia (G) dla predyktora 2=" << statistics::entropy(g_with_pred_2) << "\n";
-    std::cout << "entropia (G) dla predyktora 3=" << statistics::entropy(g_with_pred_3) << "\n";
-    std::cout << "entropia (G) dla predyktora 4=" << statistics::entropy(g_with_pred_4) << "\n";
-    std::cout << "entropia (G) dla predyktora 5=" << statistics::entropy(g_with_pred_5) << "\n";
-    std::cout << "entropia (G) dla predyktora 6=" << statistics::entropy(g_with_pred_6) << "\n";
-    std::cout << "entropia (G) dla predyktora 7=" << statistics::entropy(g_with_pred_7) << "\n";
-    std::cout << "entropia (G) dla predyktora new=" << statistics::entropy(g_with_pred_new) << "\n";
+    std::cout << "entropia (R) dla predyktora 1=" << r_entropies[0] << "\n";
+    std::cout << "entropia (R) dla predyktora 2=" << r_entropies[1] << "\n";
+    std::cout << "entropia (R) dla predyktora 3=" << r_entropies[2] << "\n";
+    std::cout << "entropia (R) dla predyktora 4=" << r_entropies[3] << "\n";
+    std::cout << "entropia (R) dla predyktora 5=" << r_entropies[4] << "\n";
+    std::cout << "entropia (R) dla predyktora 6=" << r_entropies[5] << "\n";
+    std::cout << "entropia (R) dla predyktora 7=" << r_entropies[6] << "\n";
+    std::cout << "entropia (R) dla predyktora new=" << r_entropies[7] << "\n";
+    std::cout << "najmniejsza entropia zachodzi dla predyktora " 
+        << std::distance(r_entropies.begin(), std::min_element(r_entropies.begin(), r_entropies.end())) + 1 << std::endl;
+
+    std::array<double, 8> g_entropies{
+        statistics::entropy(g_with_pred_1),
+        statistics::entropy(g_with_pred_2),
+        statistics::entropy(g_with_pred_3),
+        statistics::entropy(g_with_pred_4),
+        statistics::entropy(g_with_pred_5),
+        statistics::entropy(g_with_pred_6),
+        statistics::entropy(g_with_pred_7),
+        statistics::entropy(g_with_pred_new)
+    };
 
     std::cout << std::endl;
-    std::cout << "entropia (B) dla predyktora 1=" << statistics::entropy(b_with_pred_1) << "\n";
-    std::cout << "entropia (B) dla predyktora 2=" << statistics::entropy(b_with_pred_2) << "\n";
-    std::cout << "entropia (B) dla predyktora 3=" << statistics::entropy(b_with_pred_3) << "\n";
-    std::cout << "entropia (B) dla predyktora 4=" << statistics::entropy(b_with_pred_4) << "\n";
-    std::cout << "entropia (B) dla predyktora 5=" << statistics::entropy(b_with_pred_5) << "\n";
-    std::cout << "entropia (B) dla predyktora 6=" << statistics::entropy(b_with_pred_6) << "\n";
-    std::cout << "entropia (B) dla predyktora 7=" << statistics::entropy(b_with_pred_7) << "\n";
-    std::cout << "entropia (B) dla predyktora new=" << statistics::entropy(b_with_pred_new) << "\n";
+    std::cout << "entropia (G) dla predyktora 1=" << g_entropies[0] << "\n";
+    std::cout << "entropia (G) dla predyktora 2=" << g_entropies[1] << "\n";
+    std::cout << "entropia (G) dla predyktora 3=" << g_entropies[2] << "\n";
+    std::cout << "entropia (G) dla predyktora 4=" << g_entropies[3] << "\n";
+    std::cout << "entropia (G) dla predyktora 5=" << g_entropies[4] << "\n";
+    std::cout << "entropia (G) dla predyktora 6=" << g_entropies[5] << "\n";
+    std::cout << "entropia (G) dla predyktora 7=" << g_entropies[6] << "\n";
+    std::cout << "entropia (G) dla predyktora new=" << g_entropies[7] << "\n";
+    std::cout << "najmniejsza entropia zachodzi dla predyktora " 
+        << std::distance(g_entropies.begin(), std::min_element(g_entropies.begin(), g_entropies.end())) + 1 << std::endl;
 
+    std::array<double, 8> b_entropies{
+        statistics::entropy(b_with_pred_1),
+        statistics::entropy(b_with_pred_2),
+        statistics::entropy(b_with_pred_3),
+        statistics::entropy(b_with_pred_4),
+        statistics::entropy(b_with_pred_5),
+        statistics::entropy(b_with_pred_6),
+        statistics::entropy(b_with_pred_7),
+        statistics::entropy(b_with_pred_new)
+    };
 
-
+    std::cout << std::endl;
+    std::cout << "entropia (B) dla predyktora 1=" << b_entropies[0] << "\n";
+    std::cout << "entropia (B) dla predyktora 2=" << b_entropies[1] << "\n";
+    std::cout << "entropia (B) dla predyktora 3=" << b_entropies[2] << "\n";
+    std::cout << "entropia (B) dla predyktora 4=" << b_entropies[3] << "\n";
+    std::cout << "entropia (B) dla predyktora 5=" << b_entropies[4] << "\n";
+    std::cout << "entropia (B) dla predyktora 6=" << b_entropies[5] << "\n";
+    std::cout << "entropia (B) dla predyktora 7=" << b_entropies[6] << "\n";
+    std::cout << "entropia (B) dla predyktora new=" << b_entropies[7] << "\n";
+    std::cout << "najmniejsza entropia zachodzi dla predyktora " 
+        << std::distance(b_entropies.begin(), std::min_element(b_entropies.begin(), b_entropies.end())) + 1 << std::endl;
 }
 
 int main(int argc, char** argv)
