@@ -432,4 +432,21 @@ inline auto split_channels(accessor_RGB const& image) -> std::tuple<std::vector<
     return { red, green, blue };
 }
 
+inline auto join_channels(
+    accessor_MONO const& r,
+    accessor_MONO const& g,
+    accessor_MONO const& b) -> std::vector<uint8_t>
+{
+    std::vector<uint8_t> data {};
+
+    auto size = r.size();
+    for (size_t i {}; i < size; ++i) {
+        data.push_back(r[i]);
+        data.push_back(g[i]);
+        data.push_back(b[i]);
+    }
+
+    return data;
+}
+
 }

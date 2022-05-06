@@ -168,6 +168,71 @@ auto run_on_file(std::string const& path)
     std::cout << "entropia (B) dla predyktora new=" << b_entropies[7] << "\n";
     std::cout << "najmniejsza entropia zachodzi dla predyktora " 
         << std::distance(b_entropies.begin(), std::min_element(b_entropies.begin(), b_entropies.end())) + 1 << std::endl;
+
+    auto with_pred_1 = tga::join_channels(
+        tga::accessor_MONO {r_with_pred_1, image._width, image._height}, 
+        tga::accessor_MONO {g_with_pred_1, image._width, image._height},
+        tga::accessor_MONO {b_with_pred_1, image._width, image._height}
+    );
+    auto with_pred_2 = tga::join_channels(
+        tga::accessor_MONO {r_with_pred_2, image._width, image._height}, 
+        tga::accessor_MONO {g_with_pred_2, image._width, image._height},
+        tga::accessor_MONO {b_with_pred_2, image._width, image._height}
+    );
+    auto with_pred_3 = tga::join_channels(
+        tga::accessor_MONO {r_with_pred_3, image._width, image._height}, 
+        tga::accessor_MONO {g_with_pred_3, image._width, image._height},
+        tga::accessor_MONO {b_with_pred_3, image._width, image._height}
+    );
+    auto with_pred_4 = tga::join_channels(
+        tga::accessor_MONO {r_with_pred_4, image._width, image._height}, 
+        tga::accessor_MONO {g_with_pred_4, image._width, image._height},
+        tga::accessor_MONO {b_with_pred_4, image._width, image._height}
+    );
+    auto with_pred_5 = tga::join_channels(
+        tga::accessor_MONO {r_with_pred_5, image._width, image._height}, 
+        tga::accessor_MONO {g_with_pred_5, image._width, image._height},
+        tga::accessor_MONO {b_with_pred_5, image._width, image._height}
+    );
+    auto with_pred_6 = tga::join_channels(
+        tga::accessor_MONO {r_with_pred_6, image._width, image._height}, 
+        tga::accessor_MONO {g_with_pred_6, image._width, image._height},
+        tga::accessor_MONO {b_with_pred_6, image._width, image._height}
+    );
+    auto with_pred_7 = tga::join_channels(
+        tga::accessor_MONO {r_with_pred_7, image._width, image._height}, 
+        tga::accessor_MONO {g_with_pred_7, image._width, image._height},
+        tga::accessor_MONO {b_with_pred_7, image._width, image._height}
+    );
+    auto with_pred_new = tga::join_channels(
+        tga::accessor_MONO {r_with_pred_new, image._width, image._height}, 
+        tga::accessor_MONO {g_with_pred_new, image._width, image._height},
+        tga::accessor_MONO {b_with_pred_new, image._width, image._height}
+    );
+
+    std::array<double, 8> entropies{
+        statistics::entropy(with_pred_1),
+        statistics::entropy(with_pred_2),
+        statistics::entropy(with_pred_3),
+        statistics::entropy(with_pred_4),
+        statistics::entropy(with_pred_5),
+        statistics::entropy(with_pred_6),
+        statistics::entropy(with_pred_7),
+        statistics::entropy(with_pred_new)
+    };
+
+    std::cout << std::endl;
+    std::cout << "entropia (RGB) dla predyktora 1=" << entropies[0] << "\n";
+    std::cout << "entropia (RGB) dla predyktora 2=" << entropies[1] << "\n";
+    std::cout << "entropia (RGB) dla predyktora 3=" << entropies[2] << "\n";
+    std::cout << "entropia (RGB) dla predyktora 4=" << entropies[3] << "\n";
+    std::cout << "entropia (RGB) dla predyktora 5=" << entropies[4] << "\n";
+    std::cout << "entropia (RGB) dla predyktora 6=" << entropies[5] << "\n";
+    std::cout << "entropia (RGB) dla predyktora 7=" << entropies[6] << "\n";
+    std::cout << "entropia (RGB) dla predyktora new=" << entropies[7] << "\n";
+    std::cout << "najmniejsza entropia zachodzi dla predyktora " 
+        << std::distance(entropies.begin(), std::min_element(entropies.begin(), entropies.end())) + 1 << std::endl;
+    
 }
 
 int main(int argc, char** argv)
