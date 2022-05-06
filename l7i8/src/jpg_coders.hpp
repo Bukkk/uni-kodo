@@ -2,20 +2,24 @@
 
 #include "moje_tga.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <tuple>
 
+namespace jpg_predictors {
+struct predictor_1 {
+    static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
+    {
+        uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+        // uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+        // uint8_t nw = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
 
-inline auto predictor_1(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
-{
-    uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    // uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
-    // uint8_t nw = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
+        return w;
+    }
+};
 
-    return w;
-}
-
-inline auto predictor_2(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
+struct predictor_2 {
+    static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
 {
     // uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
     uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
@@ -23,8 +27,11 @@ inline auto predictor_2(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -
 
     return n;
 }
+};
 
-inline auto predictor_3(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
+
+struct predictor_3 {
+    static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
 {
     // uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
     // uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
@@ -32,8 +39,11 @@ inline auto predictor_3(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -
 
     return nw;
 }
+};
 
-inline auto predictor_4(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
+
+struct predictor_4 {
+    static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
 {
     uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
     uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
@@ -41,8 +51,11 @@ inline auto predictor_4(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -
 
     return n + w - nw;
 }
+};
 
-inline auto predictor_5(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
+
+struct predictor_5 {
+    static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
 {
     uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
     uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
@@ -50,8 +63,11 @@ inline auto predictor_5(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -
 
     return n + (w - nw) / 2;
 }
+};
 
-inline auto predictor_6(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
+
+struct predictor_6 {
+    static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
 {
     uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
     uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
@@ -59,8 +75,11 @@ inline auto predictor_6(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -
 
     return w + (n - nw) / 2;
 }
+};
 
-inline auto predictor_7(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
+
+struct predictor_7 {
+    static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
 {
     uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
     uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
@@ -68,8 +87,11 @@ inline auto predictor_7(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -
 
     return (n + w) / 2;
 }
+};
 
-inline auto predictor_new(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
+
+struct predictor_new {
+    static auto predict(tga::accessor_MONO const& acc, uint32_t x, uint32_t y) -> uint8_t
 {
     uint8_t w = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
     uint8_t n = acc.check_range(x - 1, y) ? acc[acc.nth(x - 1, y)] : 0;
@@ -82,4 +104,25 @@ inline auto predictor_new(tga::accessor_MONO const& acc, uint32_t x, uint32_t y)
     }
 
     return w + n - nw;
+}
+};
+
+
+template <typename Predictor>
+auto encode(tga::accessor_MONO const& acc)
+{
+    std::vector<uint8_t> vals;
+
+    for (size_t y {}; y < acc._height; ++y) {
+        for (size_t x {}; x < acc._width; ++x) {
+            uint8_t predicted = Predictor::predict(acc, x, y);
+            uint8_t real = acc[acc.nth(x, y)];
+
+            uint8_t diff = real - predicted;
+            vals.push_back(diff);
+        }
+    }
+
+    return vals;
+}
 }

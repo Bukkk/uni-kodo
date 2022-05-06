@@ -1,7 +1,9 @@
+#include "jpg_coders.hpp"
 #include "moje_tga.hpp"
 #include "utils/args_helper.hpp"
 #include "utils/time_it.hpp"
 #include "utils/vector_streams.hpp"
+#include "coding/statistics.hpp"
 
 // #include "extern/tga.hpp"
 
@@ -9,6 +11,7 @@
 #include <fstream>
 #include <ios>
 #include <iostream>
+#include <ostream>
 #include <stdexcept>
 #include <vector>
 
@@ -63,7 +66,68 @@ auto run_on_file(std::string const& path)
     // std::cout << "pg-g" << (uint16_t) accessor_g.get(image._width - 1, image._height - 1) << std::endl;
     // std::cout << "pg-b" << (uint16_t) accessor_b.get(image._width - 1, image._height - 1) << std::endl;
 
-    
+    using namespace coding;
+    std::cout << "entropia pliku=" << statistics::entropy(accessor._image) << std::endl;
+    std::cout << "entropia pliku (R)=" << statistics::entropy(accessor_r._image) << std::endl;
+    std::cout << "entropia pliku (G)=" << statistics::entropy(accessor_g._image) << std::endl;
+    std::cout << "entropia pliku (B)=" << statistics::entropy(accessor_b._image) << std::endl;
+
+    auto r_with_pred_1 = jpg_predictors::encode<jpg_predictors::predictor_1>(accessor_r);
+    auto r_with_pred_2 = jpg_predictors::encode<jpg_predictors::predictor_2>(accessor_r);
+    auto r_with_pred_3 = jpg_predictors::encode<jpg_predictors::predictor_3>(accessor_r);
+    auto r_with_pred_4 = jpg_predictors::encode<jpg_predictors::predictor_4>(accessor_r);
+    auto r_with_pred_5 = jpg_predictors::encode<jpg_predictors::predictor_5>(accessor_r);
+    auto r_with_pred_6 = jpg_predictors::encode<jpg_predictors::predictor_6>(accessor_r);
+    auto r_with_pred_7 = jpg_predictors::encode<jpg_predictors::predictor_7>(accessor_r);
+    auto r_with_pred_new = jpg_predictors::encode<jpg_predictors::predictor_new>(accessor_r);
+
+    auto g_with_pred_1 = jpg_predictors::encode<jpg_predictors::predictor_1>(accessor_g);
+    auto g_with_pred_2 = jpg_predictors::encode<jpg_predictors::predictor_2>(accessor_g);
+    auto g_with_pred_3 = jpg_predictors::encode<jpg_predictors::predictor_3>(accessor_g);
+    auto g_with_pred_4 = jpg_predictors::encode<jpg_predictors::predictor_4>(accessor_g);
+    auto g_with_pred_5 = jpg_predictors::encode<jpg_predictors::predictor_5>(accessor_g);
+    auto g_with_pred_6 = jpg_predictors::encode<jpg_predictors::predictor_6>(accessor_g);
+    auto g_with_pred_7 = jpg_predictors::encode<jpg_predictors::predictor_7>(accessor_g);
+    auto g_with_pred_new = jpg_predictors::encode<jpg_predictors::predictor_new>(accessor_g);
+
+    auto b_with_pred_1 = jpg_predictors::encode<jpg_predictors::predictor_1>(accessor_b);
+    auto b_with_pred_2 = jpg_predictors::encode<jpg_predictors::predictor_2>(accessor_b);
+    auto b_with_pred_3 = jpg_predictors::encode<jpg_predictors::predictor_3>(accessor_b);
+    auto b_with_pred_4 = jpg_predictors::encode<jpg_predictors::predictor_4>(accessor_b);
+    auto b_with_pred_5 = jpg_predictors::encode<jpg_predictors::predictor_5>(accessor_b);
+    auto b_with_pred_6 = jpg_predictors::encode<jpg_predictors::predictor_6>(accessor_b);
+    auto b_with_pred_7 = jpg_predictors::encode<jpg_predictors::predictor_7>(accessor_b);
+    auto b_with_pred_new = jpg_predictors::encode<jpg_predictors::predictor_new>(accessor_b);
+
+    std::cout << std::endl;
+    std::cout << "entropia (R) dla predyktora 1=" << statistics::entropy(r_with_pred_1) << "\n";
+    std::cout << "entropia (R) dla predyktora 2=" << statistics::entropy(r_with_pred_2) << "\n";
+    std::cout << "entropia (R) dla predyktora 3=" << statistics::entropy(r_with_pred_3) << "\n";
+    std::cout << "entropia (R) dla predyktora 4=" << statistics::entropy(r_with_pred_4) << "\n";
+    std::cout << "entropia (R) dla predyktora 5=" << statistics::entropy(r_with_pred_5) << "\n";
+    std::cout << "entropia (R) dla predyktora 6=" << statistics::entropy(r_with_pred_6) << "\n";
+    std::cout << "entropia (R) dla predyktora 7=" << statistics::entropy(r_with_pred_7) << "\n";
+    std::cout << "entropia (R) dla predyktora new=" << statistics::entropy(r_with_pred_new) << "\n";
+
+    std::cout << std::endl;
+    std::cout << "entropia (G) dla predyktora 1=" << statistics::entropy(g_with_pred_1) << "\n";
+    std::cout << "entropia (G) dla predyktora 2=" << statistics::entropy(g_with_pred_2) << "\n";
+    std::cout << "entropia (G) dla predyktora 3=" << statistics::entropy(g_with_pred_3) << "\n";
+    std::cout << "entropia (G) dla predyktora 4=" << statistics::entropy(g_with_pred_4) << "\n";
+    std::cout << "entropia (G) dla predyktora 5=" << statistics::entropy(g_with_pred_5) << "\n";
+    std::cout << "entropia (G) dla predyktora 6=" << statistics::entropy(g_with_pred_6) << "\n";
+    std::cout << "entropia (G) dla predyktora 7=" << statistics::entropy(g_with_pred_7) << "\n";
+    std::cout << "entropia (G) dla predyktora new=" << statistics::entropy(g_with_pred_new) << "\n";
+
+    std::cout << std::endl;
+    std::cout << "entropia (B) dla predyktora 1=" << statistics::entropy(b_with_pred_1) << "\n";
+    std::cout << "entropia (B) dla predyktora 2=" << statistics::entropy(b_with_pred_2) << "\n";
+    std::cout << "entropia (B) dla predyktora 3=" << statistics::entropy(b_with_pred_3) << "\n";
+    std::cout << "entropia (B) dla predyktora 4=" << statistics::entropy(b_with_pred_4) << "\n";
+    std::cout << "entropia (B) dla predyktora 5=" << statistics::entropy(b_with_pred_5) << "\n";
+    std::cout << "entropia (B) dla predyktora 6=" << statistics::entropy(b_with_pred_6) << "\n";
+    std::cout << "entropia (B) dla predyktora 7=" << statistics::entropy(b_with_pred_7) << "\n";
+    std::cout << "entropia (B) dla predyktora new=" << statistics::entropy(b_with_pred_new) << "\n";
 
 
 
