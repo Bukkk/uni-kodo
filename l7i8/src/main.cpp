@@ -39,7 +39,13 @@ auto run_on_file(std::string const& path)
         throw std::runtime_error {"obrazek nie jest w formacie rgb"};
     }
 
-    tga::accessor_RGB accessor { image };
+    tga::accessor_RGB accessor { image._data, image._width, image._height };
+    auto [r_vals, g_vals, b_vals]  = tga::split_channels(accessor);
+
+    tga::accessor_MONO accessor_r {r_vals, image._width, image._height};
+    tga::accessor_MONO accessor_g {g_vals, image._width, image._height};
+    tga::accessor_MONO accessor_b {b_vals, image._width, image._height};
+
 
     // std::cout << "00 " << accessor.get(0, 0) << std::endl;
     // std::cout << "01 " << accessor.get(0, 1) << std::endl;
@@ -51,7 +57,14 @@ auto run_on_file(std::string const& path)
 
     // std::cout << "pd" << accessor.get(image._width - 1, 0) << std::endl;
     // std::cout << "lg" << accessor.get(0, image._height - 1) << std::endl;
-    // std::cout << "pg" << accessor.get(image._width - 1, image._height - 1) << std::endl;
+    std::cout << "pg" << accessor.get(image._width - 1, image._height - 1) << std::endl;
+    std::cout << "pg-r" << (uint16_t) accessor_r.get(image._width - 1, image._height - 1) << std::endl;
+    std::cout << "pg-g" << (uint16_t) accessor_g.get(image._width - 1, image._height - 1) << std::endl;
+    std::cout << "pg-b" << (uint16_t) accessor_b.get(image._width - 1, image._height - 1) << std::endl;
+
+    
+
+
 
 }
 

@@ -7,6 +7,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <vector>
 
 // TODO na razie jestem w stanie parsowac header
@@ -307,27 +308,89 @@ inline auto operator<<(std::ostream& o, const ref_RGB& rgb) -> std::ostream&
 }
 
 struct accessor_RGB {
-    image& _image;
+    std::vector<uint8_t>& _image;
+    uint32_t _width;
+    uint32_t _height;
 
-    accessor_RGB(struct image& image)
+    accessor_RGB(std::vector<uint8_t>& image, uint32_t width, uint32_t height)
         : _image { image }
+        , _width { width }
+        , _height { height }
     {
     }
 
     auto get(uint32_t x, uint32_t y) -> ref_RGB
     {
-        if (x < _image._width && y < _image._height) {
-            size_t nth = x + y * _image._width;
+        if (x < _width && y < _height) {
+            size_t nth = x + y * _width;
             return ref_RGB {
-                .r = _image._data[3 * nth + 0],
-                .g = _image._data[3 * nth + 1],
-                .b = _image._data[3 * nth + 2]
+                .r = _image[3 * nth + 0],
+                .g = _image[3 * nth + 1],
+                .b = _image[3 * nth + 2]
             };
         }
 
         throw std::range_error { "(" + std::to_string(x) + "," + std::to_string(y) + ") -> ("
-            + std::to_string(_image._width) + "," + std::to_string(_image._height) + ")" };
+            + std::to_string(_width) + "," + std::to_string(_height) + ")" };
+    }
+
+    size_t size() const
+    {
+        return _image.size() / 3;
     }
 };
+
+struct accessor_MONO {
+    std::vector<uint8_t>& _image;
+    uint32_t _width;
+    uint32_t _height;
+
+    accessor_MONO(std::vector<uint8_t>& image, uint32_t width, uint32_t height)
+        : _image { image }
+        , _width { width }
+        , _height { height }
+    {
+    }
+
+    auto get(uint32_t x, uint32_t y) -> uint8_t&
+    {
+        if (x < _width && y < _height) {
+            size_t nth = x + y * _width;
+            return _image[nth];
+        }
+
+        throw std::range_error { "(" + std::to_string(x) + "," + std::to_string(y) + ") -> ("
+            + std::to_string(_width) + "," + std::to_string(_height) + ")" };
+    }
+
+    size_t size() const
+    {
+        return _image.size();
+    }
+};
+
+inline auto split_channels(accessor_RGB const& image) -> std::tuple<std::vector<uint8_t>, std::vector<uint8_t>, std::vector<uint8_t>>
+{
+    std::vector<uint8_t> red {}, green {}, blue {};
+
+    size_t im_size = image.size();
+    red.reserve(im_size);
+    green.reserve(im_size);
+    blue.reserve(im_size);
+
+    // for (size_t y {}; y < image._height; ++y) {
+    //     for (size_t x {}; x < image._width; ++x) {
+
+    //     }
+    // }
+
+    for (size_t i {}; i < im_size; ++i) {
+        red.push_back(image._image[3 * i + 0]);
+        green.push_back(image._image[3 * i + 1]);
+        blue.push_back(image._image[3 * i + 2]);
+    }
+
+    return {red, green, blue};
+}
 
 }
