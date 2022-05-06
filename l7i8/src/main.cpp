@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <fstream>
+#include <ios>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -57,10 +58,10 @@ auto run_on_file(std::string const& path)
 
     // std::cout << "pd" << accessor.get(image._width - 1, 0) << std::endl;
     // std::cout << "lg" << accessor.get(0, image._height - 1) << std::endl;
-    std::cout << "pg" << accessor.get(image._width - 1, image._height - 1) << std::endl;
-    std::cout << "pg-r" << (uint16_t) accessor_r.get(image._width - 1, image._height - 1) << std::endl;
-    std::cout << "pg-g" << (uint16_t) accessor_g.get(image._width - 1, image._height - 1) << std::endl;
-    std::cout << "pg-b" << (uint16_t) accessor_b.get(image._width - 1, image._height - 1) << std::endl;
+    // std::cout << "pg" << accessor.get(image._width - 1, image._height - 1) << std::endl;
+    // std::cout << "pg-r" << (uint16_t) accessor_r.get(image._width - 1, image._height - 1) << std::endl;
+    // std::cout << "pg-g" << (uint16_t) accessor_g.get(image._width - 1, image._height - 1) << std::endl;
+    // std::cout << "pg-b" << (uint16_t) accessor_b.get(image._width - 1, image._height - 1) << std::endl;
 
     
 
@@ -70,6 +71,8 @@ auto run_on_file(std::string const& path)
 
 int main(int argc, char** argv)
 {
+    std::ios_base::sync_with_stdio(false);
+
     utils::args_helper parser {
         "program testujacy kodowaie w tga\n"
         "\n"

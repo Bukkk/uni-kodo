@@ -319,10 +319,30 @@ struct accessor_RGB {
     {
     }
 
+    auto check_range(uint32_t x, uint32_t y) const -> bool
+    {
+        return x < _width && y < _height;
+    }
+
+    auto nth(uint32_t x, uint32_t y) const -> size_t
+    {
+        return x + y * _width;
+    }
+
+    auto operator[](size_t nth) const -> ref_RGB
+    {
+        return ref_RGB {
+            .r = _image[3 * nth + 0],
+            .g = _image[3 * nth + 1],
+            .b = _image[3 * nth + 2]
+        };
+    }
+
     auto get(uint32_t x, uint32_t y) -> ref_RGB
     {
-        if (x < _width && y < _height) {
-            size_t nth = x + y * _width;
+        if (check_range(x, y)) {
+            size_t nth = this->nth(x, y);
+
             return ref_RGB {
                 .r = _image[3 * nth + 0],
                 .g = _image[3 * nth + 1],
@@ -352,11 +372,26 @@ struct accessor_MONO {
     {
     }
 
-    auto get(uint32_t x, uint32_t y) -> uint8_t&
+    auto check_range(uint32_t x, uint32_t y) const -> bool
+    {
+        return x < _width && y < _height;
+    }
+
+    auto nth(uint32_t x, uint32_t y) const -> size_t
+    {
+        size_t nth = x + y * _width;
+        return nth;
+    }
+
+    auto operator[](size_t nth) const -> uint8_t&
+    {
+        return _image[nth];
+    }
+
+    auto get(uint32_t x, uint32_t y) const -> uint8_t&
     {
         if (x < _width && y < _height) {
-            size_t nth = x + y * _width;
-            return _image[nth];
+            return _image[nth(x, y)];
         }
 
         throw std::range_error { "(" + std::to_string(x) + "," + std::to_string(y) + ") -> ("
@@ -390,7 +425,7 @@ inline auto split_channels(accessor_RGB const& image) -> std::tuple<std::vector<
         blue.push_back(image._image[3 * i + 2]);
     }
 
-    return {red, green, blue};
+    return { red, green, blue };
 }
 
 }
