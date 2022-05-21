@@ -96,7 +96,7 @@ auto choose_chooser(const options& opts) -> chooser
                     std::vector<uint8_t> rgb_vals_quantized = tga::join_channels(r_vals_quantized, g_vals_quantized, b_vals_quantized);
                     double mse = coding::statistics::mse(rgb_vals, rgb_vals_quantized);
 
-                    // std::cout << mse << std::endl;
+                    std::cout << quants{q_r, q_g, q_b} << "-->" << mse << std::endl;
 
                     if (!mse_best || (mse_best && *mse_best > mse)) {
                         mse_best = mse;
@@ -125,7 +125,7 @@ auto choose_chooser(const options& opts) -> chooser
                     double mse = coding::statistics::mse(rgb_vals, rgb_vals_quantized);
                     double snr = coding::statistics::snr(rgb_vals, mse);
 
-                    // std::cout << snr << std::endl;
+                    std::cout << quants{q_r, q_g, q_b} << "-->" << snr << std::endl;
 
                     if (!snr_best || (snr_best && *snr_best < snr)) {
                         snr_best = snr;
