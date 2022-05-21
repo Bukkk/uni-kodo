@@ -16,7 +16,7 @@ namespace tga {
 
 namespace {
     template <typename T>
-    auto read_little_endian(std::vector<uint8_t>::const_iterator& data)
+    auto read_little_endian(std::vector<uint8_t>::const_iterator& data) -> T
     {
         T write_to {};
 
@@ -27,6 +27,15 @@ namespace {
         }
 
         return write_to;
+    }
+
+    template <typename T>
+    void write_little_endian(std::vector<uint8_t>& data, T write_to)
+    {
+        auto size = sizeof(write_to);
+        for (uint32_t i {}; i < size; ++i) {
+            data.push_back((write_to >> (i * 8)) & 0xff);
+        }
     }
 
 }
@@ -121,7 +130,7 @@ struct header {
 
         auto header_size = header::size;
 
-        if (iter + header_size >= end) {
+        if (iter + header_size > end) {
             throw std::runtime_error { "tga::heade::parse za malo bitow do wczytania naglowka" };
         }
 
@@ -140,6 +149,28 @@ struct header {
 
         return h;
     }
+
+    inline static auto repr(header const& h) -> std::vector<uint8_t>
+    {
+        std::vector<uint8_t> binary {};
+
+        write_little_endian<decltype(h._id_length)>(binary, h._id_length);
+        write_little_endian<decltype(h._color_map_type)>(binary, h._color_map_type);
+        write_little_endian<decltype(h._image_type)>(binary, h._image_type);
+        write_little_endian<decltype(h._color_map_origin)>(binary, h._color_map_origin);
+        write_little_endian<decltype(h._color_map_length)>(binary, h._color_map_length);
+        write_little_endian<decltype(h._color_map_entry_size)>(binary, h._color_map_entry_size);
+        write_little_endian<decltype(h._x_origin)>(binary, h._x_origin);
+        write_little_endian<decltype(h._y_origin)>(binary, h._y_origin);
+        write_little_endian<decltype(h._width)>(binary, h._width);
+        write_little_endian<decltype(h._height)>(binary, h._height);
+        write_little_endian<decltype(h._bits)>(binary, h._bits);
+        write_little_endian<decltype(h._image_descriptor)>(binary, h._image_descriptor);
+
+        return binary;
+    }
+
+    bool operator==(const header& o) const = default;
 };
 
 inline auto operator<<(std::ostream& ostream, header const& header) -> std::ostream&
@@ -179,7 +210,7 @@ struct image {
     uint32_t _height {};
     image_format _image_format { image_format::ERROR };
 
-    image(std::vector<uint8_t> const& data)
+    auto from_binary(std::vector<uint8_t> const& data)
     {
         auto iter = data.begin();
         _header = header::parse(iter, data.end());
@@ -296,6 +327,112 @@ struct image {
             throw std::runtime_error { "unknown _header._image_type=" + std::to_string(_header._image_type) };
         }
         }
+    }
+
+    auto to_binary() -> std::vector<uint8_t>
+    {
+        std::vector<uint8_t> binary = header::repr(_header);
+
+        // TODO tu byl wczyt image descriptor moze jest niepotrzebny
+
+        if (_header._color_map_type == 1) {
+            // size_t colmap_elem_size = _header._color_map_entry_size / 8;
+            // std::vector<uint8_t> colmap {};
+            // size_t colmap_size = _header._color_map_length * colmap_elem_size;
+            // if (iter + colmap_size > data.end()) {
+            //     throw std::runtime_error { "mniej danych niz wskazuje colmap_size" };
+            // }
+            // colmap = std::vector<uint8_t>(iter, iter + colmap_size);
+            // iter += colmap_size;
+            throw std::runtime_error { "TODO: tga::image.to_binary() nie obsluguje colormap" };
+        }
+
+        std::vector<uint8_t> transformed_data {};
+        auto image_size = _data.size();
+        transformed_data.resize(image_size);
+
+        bool right_first = _header._image_descriptor & (1 << 4);
+        bool top_first = _header._image_descriptor & (1 << 5);
+
+        if (right_first || top_first) {
+            throw std::runtime_error { "right_first=" + std::to_string(right_first) + " top_first=" + std::to_string(top_first) };
+        }
+
+        switch (_header._image_type) {
+        case 0: {
+            // no image
+
+        } break;
+        case 1: {
+            // uncompressed palleted
+            throw std::runtime_error { "not implemented" };
+
+            // switch (_header._bits) {
+            // case 8: {
+            //     switch (pixel_size) {
+            //     case 3: {
+            //         _image_format = image_format::RGB;
+            //     } break;
+            //     case 4: {
+            //         throw std::runtime_error { "not implemented" };
+            //     } break;
+            //     default: {
+            //         throw std::runtime_error { "unknown pixel_size=" + std::to_string(pixel_size) };
+            //     }
+            //     }
+            // } break;
+            // case 16: {
+            //     throw std::runtime_error { "not implemented" };
+            // }
+            // default: {
+            //     throw std::runtime_error { "unknown _header._bits=" + std::to_string(_header._bits) };
+            // }
+            // }
+        } break;
+        case 2: {
+            // uncompressed truecolor
+            if (_image_format == image_format::RGB) {
+                for (size_t i {}; i < image_size / 3; ++i) {
+                    transformed_data[3 * i + 2] = _data[3 * i + 0];
+                    transformed_data[3 * i + 1] = _data[3 * i + 1];
+                    transformed_data[3 * i + 0] = _data[3 * i + 2];
+                }
+            } else if (_image_format == image_format::RGBA) {
+                for (size_t i {}; i < image_size / 4; ++i) {
+                    transformed_data[4 * i + 2] = _data[4 * i + 0];
+                    transformed_data[4 * i + 1] = _data[4 * i + 1];
+                    transformed_data[4 * i + 0] = _data[4 * i + 2];
+                    transformed_data[4 * i + 3] = _data[4 * i + 3];
+                }
+            } else {
+                throw std::runtime_error { "unknown _header._bits=" + std::to_string(_header._bits) };
+            }
+
+        } break;
+        case 3: {
+            // uncompressed monochrome
+            throw std::runtime_error { "not implemented" };
+        } break;
+        case 9: {
+            // compressed paletted
+            throw std::runtime_error { "not implemented" };
+        } break;
+        case 10: {
+            // compressed truecolor
+            throw std::runtime_error { "not implemented" };
+        } break;
+        case 11: {
+            // compressed monochrome
+            throw std::runtime_error { "not implemented" };
+        } break;
+        default: {
+            throw std::runtime_error { "unknown _header._image_type=" + std::to_string(_header._image_type) };
+        }
+        }
+
+        binary.insert(binary.end(), transformed_data.begin(), transformed_data.end());
+
+        return binary;
     }
 };
 
@@ -419,7 +556,7 @@ inline auto split_channels(std::vector<uint8_t> const& image) -> std::tuple<std:
 {
     std::vector<uint8_t> red {}, green {}, blue {};
 
-    size_t im_size = image.size();
+    size_t im_size = image.size() / 3;
     red.resize(im_size);
     green.resize(im_size);
     blue.resize(im_size);

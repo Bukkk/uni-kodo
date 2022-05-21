@@ -16,16 +16,16 @@ inline auto uniform_quantization(const std::vector<uint8_t>& data, uint32_t bits
 {
     std::vector<uint8_t> result;
 
-    if (bits >= 8) {
-        bits = 8;
-    }
+    // if (bits >= 8) {
+    //     bits = 8;
+    // }
 
     auto quantize = [&bits](uint32_t val) -> uint8_t{
-        uint32_t upper = 255;
+        uint32_t upper = 256;
         uint32_t lower = 0;
         for (uint32_t i {}; i < bits; ++i) {
             auto mid = lower + (upper - lower) / 2;
-            if (val <= mid) {
+            if (val < mid) {
                 upper = mid;
             } else {
                 lower = mid;

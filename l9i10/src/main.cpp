@@ -37,6 +37,17 @@ struct quants {
     uint32_t b_quant {};
 };
 
+auto operator<<(std::ostream& o, quants const& q) -> std::ostream&
+{
+    // clang-format off
+    o << "{"
+        << "r_bits=" << q.r_quant << ","
+        << "g_bits=" << q.g_quant << ","
+        << "b_bits=" << q.b_quant
+        << "}";
+    // clang-format on
+}
+
 using chooser = std::function<quants(std::vector<uint8_t> const&, std::vector<uint8_t> const&, std::vector<uint8_t> const&)>;
 
 auto choose_quants(const options& opts) -> chooser
@@ -57,11 +68,11 @@ auto choose_quants(const options& opts) -> chooser
 
     if (opts.opt_mode == "mse") {
         return [](std::vector<uint8_t> const& r, std::vector<uint8_t> const& g, std::vector<uint8_t> const& b) -> quants {
-            return {3, 3, 2};
+            return { 3, 3, 2 };
         };
     } else if (opts.opt_mode == "snr") {
         return [](std::vector<uint8_t> const& r, std::vector<uint8_t> const& g, std::vector<uint8_t> const& b) -> quants {
-            return {3, 3, 2};
+            return { 3, 3, 2 };
         };
     } else if (opts.opt_mode == "manual") {
         return [q]([[maybe_unused]] std::vector<uint8_t> const& r, [[maybe_unused]] std::vector<uint8_t> const& g, [[maybe_unused]] std::vector<uint8_t> const& b) -> quants {
@@ -86,7 +97,8 @@ auto run_on_file(const options& opts)
 
     file >> data;
 
-    tga::image image { data };
+    tga::image image {};
+    image.from_binary(data);
     std::cout << image._header << std::endl;
 
     if (image._image_format != tga::image_format::RGB) {
@@ -104,17 +116,16 @@ auto run_on_file(const options& opts)
 
     std::vector<uint8_t> rgb_vals_quantized = tga::join_channels(r_vals_quantized, g_vals_quantized, b_vals_quantized);
 
+    tga::accessor_RGB accessor { image._data, image._width, image._height };
+    tga::accessor_MONO accessor_r { r_vals, image._width, image._height };
+    tga::accessor_MONO accessor_g { g_vals, image._width, image._height };
+    tga::accessor_MONO accessor_b { b_vals, image._width, image._height };
+
+    tga::accessor_RGB accessor_quantized { rgb_vals_quantized, image._width, image._height };
+    tga::accessor_MONO accessor_r_quantized { r_vals_quantized, image._width, image._height };
+    tga::accessor_MONO accessor_g_quantized { g_vals_quantized, image._width, image._height };
+    tga::accessor_MONO accessor_b_quantized { b_vals_quantized, image._width, image._height };
     {
-        tga::accessor_RGB accessor { image._data, image._width, image._height };
-        tga::accessor_MONO accessor_r { r_vals, image._width, image._height };
-        tga::accessor_MONO accessor_g { g_vals, image._width, image._height };
-        tga::accessor_MONO accessor_b { b_vals, image._width, image._height };
-
-        tga::accessor_RGB accessor_quantized { rgb_vals_quantized, image._width, image._height };
-        tga::accessor_MONO accessor_r_quantized { r_vals_quantized, image._width, image._height };
-        tga::accessor_MONO accessor_g_quantized { g_vals_quantized, image._width, image._height };
-        tga::accessor_MONO accessor_b_quantized { b_vals_quantized, image._width, image._height };
-
         auto mse = statistics::mse(accessor._image, accessor_quantized._image);
         auto mse_r = statistics::mse(accessor_r._image, accessor_r_quantized._image);
         auto mse_g = statistics::mse(accessor_g._image, accessor_g_quantized._image);
@@ -144,7 +155,21 @@ auto run_on_file(const options& opts)
         std::cout << "entropia pliku wyjsciowego (B)=" << statistics::entropy(accessor_b_quantized._image) << std::endl;
         std::cout << "entropia pliku wyjsciowego (R)=" << statistics::entropy(accessor_r_quantized._image) << std::endl;
         std::cout << "entropia pliku wyjsciowego (G)=" << statistics::entropy(accessor_g_quantized._image) << std::endl;
+
+        std::cout << "wybrany kwantyzator= " << q << std::endl;
     }
+
+    std::ofstream save_file { opts.tga_save_file_path };
+    if (!save_file) {
+        throw std::runtime_error { "nie mozna otworzyc pliku=" + opts.tga_save_file_path };
+    }
+
+    tga::image save_image = image;
+    save_image._data = rgb_vals_quantized;
+
+    std::vector<uint8_t> save_data = save_image.to_binary();
+
+    save_file << save_data;
 }
 
 int main(int argc, char** argv)
