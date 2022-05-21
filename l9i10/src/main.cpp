@@ -14,6 +14,7 @@
 #include <cassert>
 #include <cstdint>
 #include <fstream>
+#include <functional>
 #include <ios>
 #include <iostream>
 #include <ostream>
@@ -36,6 +37,41 @@ struct quants {
     uint32_t b_quant {};
 };
 
+using chooser = std::function<quants(std::vector<uint8_t> const&, std::vector<uint8_t> const&, std::vector<uint8_t> const&)>;
+
+auto choose_quants(const options& opts) -> chooser
+{
+    quants q {};
+    {
+        std::stringstream ss { opts.r_quant };
+        ss >> q.r_quant;
+    }
+    {
+        std::stringstream ss { opts.g_quant };
+        ss >> q.g_quant;
+    }
+    {
+        std::stringstream ss { opts.b_quant };
+        ss >> q.b_quant;
+    }
+
+    if (opts.opt_mode == "mse") {
+        return [](std::vector<uint8_t> const& r, std::vector<uint8_t> const& g, std::vector<uint8_t> const& b) -> quants {
+            return {3, 3, 2};
+        };
+    } else if (opts.opt_mode == "snr") {
+        return [](std::vector<uint8_t> const& r, std::vector<uint8_t> const& g, std::vector<uint8_t> const& b) -> quants {
+            return {3, 3, 2};
+        };
+    } else if (opts.opt_mode == "manual") {
+        return [q]([[maybe_unused]] std::vector<uint8_t> const& r, [[maybe_unused]] std::vector<uint8_t> const& g, [[maybe_unused]] std::vector<uint8_t> const& b) -> quants {
+            return q;
+        };
+    }
+
+    throw std::runtime_error { "nie tryb dzialania=" + opts.opt_mode };
+}
+
 auto run_on_file(const options& opts)
 {
     using namespace coding;
@@ -57,45 +93,47 @@ auto run_on_file(const options& opts)
         throw std::runtime_error { "obrazek nie jest w formacie rgb" };
     }
 
-    tga::accessor_RGB accessor { image._data, image._width, image._height };
-    auto [r_vals, g_vals, b_vals] = tga::split_channels(accessor);
+    auto [r_vals, g_vals, b_vals] = tga::split_channels(image._data);
 
-    std::vector<uint8_t> r_vals_quantized = uniform_quantization(r_vals, 3);
-    std::vector<uint8_t> g_vals_quantized = uniform_quantization(g_vals, 3);
-    std::vector<uint8_t> b_vals_quantized = uniform_quantization(b_vals, 2);
+    auto chooser = choose_quants(opts);
+    quants q = chooser(r_vals, g_vals, b_vals);
 
-    tga::accessor_MONO accessor_r { r_vals, image._width, image._height };
-    tga::accessor_MONO accessor_g { g_vals, image._width, image._height };
-    tga::accessor_MONO accessor_b { b_vals, image._width, image._height };
+    std::vector<uint8_t> r_vals_quantized = uniform_quantization(r_vals, q.r_quant);
+    std::vector<uint8_t> g_vals_quantized = uniform_quantization(g_vals, q.g_quant);
+    std::vector<uint8_t> b_vals_quantized = uniform_quantization(b_vals, q.b_quant);
 
-    tga::accessor_MONO accessor_r_quantized { r_vals_quantized, image._width, image._height };
-    tga::accessor_MONO accessor_g_quantized { g_vals_quantized, image._width, image._height };
-    tga::accessor_MONO accessor_b_quantized { b_vals_quantized, image._width, image._height };
-
-    std::vector<uint8_t> rgb_vals_quantized = tga::join_channels(accessor_r_quantized, accessor_g_quantized, accessor_b_quantized);
-
-    tga::accessor_RGB accessor_quantized { rgb_vals_quantized, image._width, image._height };
+    std::vector<uint8_t> rgb_vals_quantized = tga::join_channels(r_vals_quantized, g_vals_quantized, b_vals_quantized);
 
     {
+        tga::accessor_RGB accessor { image._data, image._width, image._height };
+        tga::accessor_MONO accessor_r { r_vals, image._width, image._height };
+        tga::accessor_MONO accessor_g { g_vals, image._width, image._height };
+        tga::accessor_MONO accessor_b { b_vals, image._width, image._height };
+
+        tga::accessor_RGB accessor_quantized { rgb_vals_quantized, image._width, image._height };
+        tga::accessor_MONO accessor_r_quantized { r_vals_quantized, image._width, image._height };
+        tga::accessor_MONO accessor_g_quantized { g_vals_quantized, image._width, image._height };
+        tga::accessor_MONO accessor_b_quantized { b_vals_quantized, image._width, image._height };
+
         auto mse = statistics::mse(accessor._image, accessor_quantized._image);
         auto mse_r = statistics::mse(accessor_r._image, accessor_r_quantized._image);
         auto mse_g = statistics::mse(accessor_g._image, accessor_g_quantized._image);
         auto mse_b = statistics::mse(accessor_b._image, accessor_b_quantized._image);
 
-        std::cout << "entropia pliku    =" << statistics::entropy(accessor._image) << std::endl;
-        std::cout << "entropia pliku (R)=" << statistics::entropy(accessor_r._image) << std::endl;
-        std::cout << "entropia pliku (G)=" << statistics::entropy(accessor_g._image) << std::endl;
-        std::cout << "entropia pliku (B)=" << statistics::entropy(accessor_b._image) << std::endl;
+        auto snr = statistics::snr(accessor_quantized._image, mse);
+        auto snr_r = statistics::snr(accessor_r_quantized._image, mse_r);
+        auto snr_g = statistics::snr(accessor_g_quantized._image, mse_g);
+        auto snr_b = statistics::snr(accessor_b_quantized._image, mse_b);
+
+        std::cout << "entropia pliku wejsciowego    =" << statistics::entropy(accessor._image) << std::endl;
+        std::cout << "entropia pliku wejsciowego (R)=" << statistics::entropy(accessor_r._image) << std::endl;
+        std::cout << "entropia pliku wejsciowego (G)=" << statistics::entropy(accessor_g._image) << std::endl;
+        std::cout << "entropia pliku wejsciowego (B)=" << statistics::entropy(accessor_b._image) << std::endl;
 
         std::cout << "mse    =" << mse << std::endl;
         std::cout << "mse (R)=" << mse_r << std::endl;
         std::cout << "mse (G)=" << mse_g << std::endl;
         std::cout << "mse (B)=" << mse_b << std::endl;
-
-        auto snr = statistics::snr(accessor_quantized._image, mse);
-        auto snr_r = statistics::snr(accessor_r_quantized._image, mse_r);
-        auto snr_g = statistics::snr(accessor_g_quantized._image, mse_g);
-        auto snr_b = statistics::snr(accessor_b_quantized._image, mse_b);
 
         std::cout << "snr    =" << snr << " (" << statistics::to_decibels(snr) << "dB)" << std::endl;
         std::cout << "snr (R)=" << snr_r << " (" << statistics::to_decibels(snr_r) << "dB)" << std::endl;

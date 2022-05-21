@@ -102,17 +102,19 @@ struct predictor_new {
 };
 
 template <typename Predictor>
-auto encode(tga::accessor_MONO const& acc)
+auto encode(tga::accessor_MONO const& acc) -> std::vector<uint8_t>
 {
     std::vector<uint8_t> vals;
+    vals.resize(acc.size());
 
     for (size_t y {}; y < acc._height; ++y) {
         for (size_t x {}; x < acc._width; ++x) {
+            auto nth = acc.nth(x, y);
             uint8_t predicted = Predictor::predict(acc, x, y);
-            uint8_t real = acc[acc.nth(x, y)];
+            uint8_t real = acc[nth];
 
             uint8_t diff = real - predicted;
-            vals.push_back(diff);
+            vals[nth] = diff;
         }
     }
 

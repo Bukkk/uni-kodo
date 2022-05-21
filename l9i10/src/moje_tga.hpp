@@ -220,7 +220,7 @@ struct image {
         bool top_first = _header._image_descriptor & (1 << 5);
 
         if (right_first || top_first) {
-            throw std::runtime_error {"right_first=" + std::to_string(right_first) + " top_first=" + std::to_string(top_first)};
+            throw std::runtime_error { "right_first=" + std::to_string(right_first) + " top_first=" + std::to_string(top_first) };
         }
 
         switch (_header._image_type) {
@@ -415,42 +415,37 @@ struct accessor_MONO {
     }
 };
 
-inline auto split_channels(accessor_RGB const& image) -> std::tuple<std::vector<uint8_t>, std::vector<uint8_t>, std::vector<uint8_t>>
+inline auto split_channels(std::vector<uint8_t> const& image) -> std::tuple<std::vector<uint8_t>, std::vector<uint8_t>, std::vector<uint8_t>>
 {
     std::vector<uint8_t> red {}, green {}, blue {};
 
     size_t im_size = image.size();
-    red.reserve(im_size);
-    green.reserve(im_size);
-    blue.reserve(im_size);
-
-    // for (size_t y {}; y < image._height; ++y) {
-    //     for (size_t x {}; x < image._width; ++x) {
-
-    //     }
-    // }
+    red.resize(im_size);
+    green.resize(im_size);
+    blue.resize(im_size);
 
     for (size_t i {}; i < im_size; ++i) {
-        red.push_back(image._image[3 * i + 0]);
-        green.push_back(image._image[3 * i + 1]);
-        blue.push_back(image._image[3 * i + 2]);
+        red[i] = image[3 * i + 0];
+        green[i] = image[3 * i + 1];
+        blue[i] = image[3 * i + 2];
     }
 
     return { red, green, blue };
 }
 
 inline auto join_channels(
-    accessor_MONO const& r,
-    accessor_MONO const& g,
-    accessor_MONO const& b) -> std::vector<uint8_t>
+    std::vector<uint8_t> const& r,
+    std::vector<uint8_t> const& g,
+    std::vector<uint8_t> const& b) -> std::vector<uint8_t>
 {
     std::vector<uint8_t> data {};
 
     auto size = r.size();
+    data.resize(3 * size);
     for (size_t i {}; i < size; ++i) {
-        data.push_back(r[i]);
-        data.push_back(g[i]);
-        data.push_back(b[i]);
+        data[3 * i + 0] = r[i];
+        data[3 * i + 1] = g[i];
+        data[3 * i + 2] = b[i];
     }
 
     return data;

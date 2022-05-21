@@ -37,9 +37,9 @@ inline auto uniform_quantization(const std::vector<uint8_t>& data, uint32_t bits
     };
     auto size = data.size();
 
-    result.reserve(size);
+    result.resize(size);
     for (decltype(size) i {}; i < size; ++i) {
-        result.push_back(quantize(data[i]));
+        result[i] = quantize(data[i]);
     }
 
     return result;
