@@ -17,7 +17,9 @@
 #include <functional>
 #include <ios>
 #include <iostream>
+#include <optional>
 #include <ostream>
+#include <sstream>
 #include <stdexcept>
 #include <vector>
 
@@ -29,6 +31,8 @@ struct options {
     std::string r_quant {};
     std::string g_quant {};
     std::string b_quant {};
+
+    std::string bits {};
 };
 
 struct quants {
@@ -46,11 +50,13 @@ auto operator<<(std::ostream& o, quants const& q) -> std::ostream&
         << "b_bits=" << q.b_quant
         << "}";
     // clang-format on
+
+    return o;
 }
 
-using chooser = std::function<quants(std::vector<uint8_t> const&, std::vector<uint8_t> const&, std::vector<uint8_t> const&)>;
+using chooser = std::function<quants(std::vector<uint8_t> const&)>;
 
-auto choose_quants(const options& opts) -> chooser
+auto choose_chooser(const options& opts) -> chooser
 {
     quants q {};
     {
@@ -66,16 +72,72 @@ auto choose_quants(const options& opts) -> chooser
         ss >> q.b_quant;
     }
 
+    uint32_t bits { 24 };
+    {
+        std::stringstream ss { opts.bits };
+        ss >> bits;
+    }
+
     if (opts.opt_mode == "mse") {
-        return [](std::vector<uint8_t> const& r, std::vector<uint8_t> const& g, std::vector<uint8_t> const& b) -> quants {
-            return { 3, 3, 2 };
+        return [bits](std::vector<uint8_t> const& rgb_vals) -> quants {
+
+            auto [r_vals, g_vals, b_vals] = tga::split_channels(rgb_vals);
+            
+            quants best = {0, 0, 0};
+            auto mse_best = std::optional<double>{};
+            for (uint32_t q_r {}; q_r <= bits; ++q_r) {
+                for (uint32_t q_g {}; q_g <= bits - q_r; ++q_g) {
+                    uint32_t q_b = bits - q_r - q_g;
+
+                    std::vector<uint8_t> r_vals_quantized = coding::uniform_quantization(r_vals, q_r);
+                    std::vector<uint8_t> g_vals_quantized = coding::uniform_quantization(g_vals, q_g);
+                    std::vector<uint8_t> b_vals_quantized = coding::uniform_quantization(b_vals, q_b);
+
+                    std::vector<uint8_t> rgb_vals_quantized = tga::join_channels(r_vals_quantized, g_vals_quantized, b_vals_quantized);
+                    double mse = coding::statistics::mse(rgb_vals, rgb_vals_quantized);
+
+                    // std::cout << mse << std::endl;
+
+                    if (!mse_best || (mse_best && *mse_best > mse)) {
+                        mse_best = mse;
+                        best = {q_r, q_g, q_b};
+                    }
+                }
+            }
+
+            return best;
         };
     } else if (opts.opt_mode == "snr") {
-        return [](std::vector<uint8_t> const& r, std::vector<uint8_t> const& g, std::vector<uint8_t> const& b) -> quants {
-            return { 3, 3, 2 };
+        return [bits](std::vector<uint8_t> const& rgb_vals) -> quants {
+            auto [r_vals, g_vals, b_vals] = tga::split_channels(rgb_vals);
+            
+            quants best = {0, 0, 0};
+            auto snr_best = std::optional<double>{};
+            for (uint32_t q_r {}; q_r <= bits; ++q_r) {
+                for (uint32_t q_g {}; q_g <= bits - q_r; ++q_g) {
+                    uint32_t q_b = bits - q_r - q_g;
+
+                    std::vector<uint8_t> r_vals_quantized = coding::uniform_quantization(r_vals, q_r);
+                    std::vector<uint8_t> g_vals_quantized = coding::uniform_quantization(g_vals, q_g);
+                    std::vector<uint8_t> b_vals_quantized = coding::uniform_quantization(b_vals, q_b);
+
+                    std::vector<uint8_t> rgb_vals_quantized = tga::join_channels(r_vals_quantized, g_vals_quantized, b_vals_quantized);
+                    double mse = coding::statistics::mse(rgb_vals, rgb_vals_quantized);
+                    double snr = coding::statistics::snr(rgb_vals, mse);
+
+                    // std::cout << snr << std::endl;
+
+                    if (!snr_best || (snr_best && *snr_best < snr)) {
+                        snr_best = snr;
+                        best = {q_r, q_g, q_b};
+                    }
+                }
+            }
+
+            return best;
         };
     } else if (opts.opt_mode == "manual") {
-        return [q]([[maybe_unused]] std::vector<uint8_t> const& r, [[maybe_unused]] std::vector<uint8_t> const& g, [[maybe_unused]] std::vector<uint8_t> const& b) -> quants {
+        return [q]([[maybe_unused]] std::vector<uint8_t> const& rgb) -> quants {
             return q;
         };
     }
@@ -105,10 +167,10 @@ auto run_on_file(const options& opts)
         throw std::runtime_error { "obrazek nie jest w formacie rgb" };
     }
 
-    auto [r_vals, g_vals, b_vals] = tga::split_channels(image._data);
+    auto best_quants = choose_chooser(opts);
+    quants q = best_quants(image._data);
 
-    auto chooser = choose_quants(opts);
-    quants q = chooser(r_vals, g_vals, b_vals);
+    auto [r_vals, g_vals, b_vals] = tga::split_channels(image._data);
 
     std::vector<uint8_t> r_vals_quantized = uniform_quantization(r_vals, q.r_quant);
     std::vector<uint8_t> g_vals_quantized = uniform_quantization(g_vals, q.g_quant);
@@ -125,6 +187,7 @@ auto run_on_file(const options& opts)
     tga::accessor_MONO accessor_r_quantized { r_vals_quantized, image._width, image._height };
     tga::accessor_MONO accessor_g_quantized { g_vals_quantized, image._width, image._height };
     tga::accessor_MONO accessor_b_quantized { b_vals_quantized, image._width, image._height };
+
     {
         auto mse = statistics::mse(accessor._image, accessor_quantized._image);
         auto mse_r = statistics::mse(accessor_r._image, accessor_r_quantized._image);
@@ -156,7 +219,7 @@ auto run_on_file(const options& opts)
         std::cout << "entropia pliku wyjsciowego (R)=" << statistics::entropy(accessor_r_quantized._image) << std::endl;
         std::cout << "entropia pliku wyjsciowego (G)=" << statistics::entropy(accessor_g_quantized._image) << std::endl;
 
-        std::cout << "wybrany kwantyzator= " << q << std::endl;
+        std::cout << "wybrany kwantyzator=" << q << std::endl;
     }
 
     std::ofstream save_file { opts.tga_save_file_path };
@@ -190,6 +253,8 @@ int main(int argc, char** argv)
     parser.set_optional({ .write_to = opts.r_quant, .symbol = "-r" });
     parser.set_optional({ .write_to = opts.g_quant, .symbol = "-g" });
     parser.set_optional({ .write_to = opts.b_quant, .symbol = "-b" });
+
+    parser.set_optional({ .write_to = opts.bits, .symbol = "--bits" });
 
     if (!parser.parse(argc, argv)) {
         std::cout << parser.help_page();
