@@ -93,8 +93,13 @@ auto choose_chooser(const options& opts) -> chooser
                     std::vector<uint8_t> g_vals_quantized = coding::uniform_quantization(g_vals, q_g);
                     std::vector<uint8_t> b_vals_quantized = coding::uniform_quantization(b_vals, q_b);
 
-                    std::vector<uint8_t> rgb_vals_quantized = tga::join_channels(r_vals_quantized, g_vals_quantized, b_vals_quantized);
-                    double mse = coding::statistics::mse(rgb_vals, rgb_vals_quantized);
+                    // std::vector<uint8_t> rgb_vals_quantized = tga::join_channels(r_vals_quantized, g_vals_quantized, b_vals_quantized);
+                    // double mse = coding::statistics::mse(rgb_vals, rgb_vals_quantized);
+
+                    double mse_r = coding::statistics::mse(r_vals, r_vals_quantized);
+                    double mse_g = coding::statistics::mse(g_vals, g_vals_quantized);
+                    double mse_b = coding::statistics::mse(b_vals, b_vals_quantized);
+                    double mse = std::max(std::max(mse_r, mse_g), mse_b);
 
                     std::cout << quants{q_r, q_g, q_b} << "-->" << mse << std::endl;
 
@@ -121,9 +126,17 @@ auto choose_chooser(const options& opts) -> chooser
                     std::vector<uint8_t> g_vals_quantized = coding::uniform_quantization(g_vals, q_g);
                     std::vector<uint8_t> b_vals_quantized = coding::uniform_quantization(b_vals, q_b);
 
-                    std::vector<uint8_t> rgb_vals_quantized = tga::join_channels(r_vals_quantized, g_vals_quantized, b_vals_quantized);
-                    double mse = coding::statistics::mse(rgb_vals, rgb_vals_quantized);
-                    double snr = coding::statistics::snr(rgb_vals, mse);
+                    // std::vector<uint8_t> rgb_vals_quantized = tga::join_channels(r_vals_quantized, g_vals_quantized, b_vals_quantized);
+                    // double mse = coding::statistics::mse(rgb_vals, rgb_vals_quantized);
+                    // double snr = coding::statistics::snr(rgb_vals, mse);
+
+                    double mse_r = coding::statistics::mse(r_vals, r_vals_quantized);
+                    double mse_g = coding::statistics::mse(g_vals, g_vals_quantized);
+                    double mse_b = coding::statistics::mse(b_vals, b_vals_quantized);
+                    double snr_r = coding::statistics::snr(r_vals, mse_r);
+                    double snr_g = coding::statistics::snr(g_vals, mse_g);
+                    double snr_b = coding::statistics::snr(b_vals, mse_b);
+                    double snr = std::min(std::min(snr_r, snr_g), snr_b);
 
                     std::cout << quants{q_r, q_g, q_b} << "-->" << snr << std::endl;
 
