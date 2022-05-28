@@ -1,10 +1,10 @@
-executable = executable('koder',
+coder = executable('koder',
   'coder.cpp',
 
   dependencies: []
 )
 
-executable = executable('analizator',
+analyzer = executable('analizator',
   'analyzer.cpp',
 
   dependencies: []
