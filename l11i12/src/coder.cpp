@@ -74,97 +74,6 @@ auto create_chooser(const options& opts) -> quant_chooser
     throw std::runtime_error { "nie tryb dzialania=" + opts.quant_mode };
 }
 
-auto run_on_file(const options& opts)
-{
-    using namespace coding;
-    using utils::vector_streams::binary::operator<<;
-    using utils::vector_streams::binary::operator>>;
-
-    std::vector<unsigned char> data {};
-    std::ifstream file { opts.tga_file_path };
-    if (!file) {
-        throw std::runtime_error { "nie mozna otworzyc pliku=" + opts.tga_file_path };
-    }
-
-    file >> data;
-
-    tga::image image {};
-    image.from_binary(data);
-    std::cout << image._header << std::endl;
-
-    if (image._image_format != tga::image_format::RGB) {
-        throw std::runtime_error { "obrazek nie jest w formacie rgb" };
-    }
-
-    auto quant_chooser = create_chooser(opts);
-    quants q = quant_chooser(image._data);
-    {
-        std::cout << "wybrany kwantyzator=" << q << std::endl;
-    }
-
-    auto [r_vals, g_vals, b_vals] = tga::split_channels(image._data);
-
-    std::vector<uint8_t> r_vals_quantized = uniform_quantization(r_vals, q.r_quant);
-    std::vector<uint8_t> g_vals_quantized = uniform_quantization(g_vals, q.g_quant);
-    std::vector<uint8_t> b_vals_quantized = uniform_quantization(b_vals, q.b_quant);
-
-    std::vector<uint8_t> rgb_vals_quantized = tga::join_channels(r_vals_quantized, g_vals_quantized, b_vals_quantized);
-
-    {
-        tga::accessor_RGB accessor { image._data, image._width, image._height };
-        tga::accessor_MONO accessor_r { r_vals, image._width, image._height };
-        tga::accessor_MONO accessor_g { g_vals, image._width, image._height };
-        tga::accessor_MONO accessor_b { b_vals, image._width, image._height };
-
-        tga::accessor_RGB accessor_quantized { rgb_vals_quantized, image._width, image._height };
-        tga::accessor_MONO accessor_r_quantized { r_vals_quantized, image._width, image._height };
-        tga::accessor_MONO accessor_g_quantized { g_vals_quantized, image._width, image._height };
-        tga::accessor_MONO accessor_b_quantized { b_vals_quantized, image._width, image._height };
-
-        auto mse = statistics::mse(accessor._image, accessor_quantized._image);
-        auto mse_r = statistics::mse(accessor_r._image, accessor_r_quantized._image);
-        auto mse_g = statistics::mse(accessor_g._image, accessor_g_quantized._image);
-        auto mse_b = statistics::mse(accessor_b._image, accessor_b_quantized._image);
-
-        auto snr = statistics::snr(accessor_quantized._image, mse);
-        auto snr_r = statistics::snr(accessor_r_quantized._image, mse_r);
-        auto snr_g = statistics::snr(accessor_g_quantized._image, mse_g);
-        auto snr_b = statistics::snr(accessor_b_quantized._image, mse_b);
-
-        std::cout << "entropia pliku wejsciowego    =" << statistics::entropy(accessor._image) << std::endl;
-        std::cout << "entropia pliku wejsciowego (R)=" << statistics::entropy(accessor_r._image) << std::endl;
-        std::cout << "entropia pliku wejsciowego (G)=" << statistics::entropy(accessor_g._image) << std::endl;
-        std::cout << "entropia pliku wejsciowego (B)=" << statistics::entropy(accessor_b._image) << std::endl;
-
-        std::cout << "mse    =" << mse << std::endl;
-        std::cout << "mse (R)=" << mse_r << std::endl;
-        std::cout << "mse (G)=" << mse_g << std::endl;
-        std::cout << "mse (B)=" << mse_b << std::endl;
-
-        std::cout << "snr    =" << snr << " (" << statistics::to_decibels(snr) << "dB)" << std::endl;
-        std::cout << "snr (R)=" << snr_r << " (" << statistics::to_decibels(snr_r) << "dB)" << std::endl;
-        std::cout << "snr (G)=" << snr_g << " (" << statistics::to_decibels(snr_g) << "dB)" << std::endl;
-        std::cout << "snr (B)=" << snr_b << " (" << statistics::to_decibels(snr_b) << "dB)" << std::endl;
-
-        std::cout << "entropia pliku wyjsciowego    =" << statistics::entropy(accessor_quantized._image) << std::endl;
-        std::cout << "entropia pliku wyjsciowego (B)=" << statistics::entropy(accessor_b_quantized._image) << std::endl;
-        std::cout << "entropia pliku wyjsciowego (R)=" << statistics::entropy(accessor_r_quantized._image) << std::endl;
-        std::cout << "entropia pliku wyjsciowego (G)=" << statistics::entropy(accessor_g_quantized._image) << std::endl;
-    }
-
-    std::ofstream save_file { opts.tga_save_file_path };
-    if (!save_file) {
-        throw std::runtime_error { "nie mozna otworzyc pliku=" + opts.tga_save_file_path };
-    }
-
-    tga::image save_image = image;
-    save_image._data = rgb_vals_quantized;
-
-    std::vector<uint8_t> save_data = save_image.to_binary();
-
-    save_file << save_data;
-}
-
 auto encode(std::vector<uint8_t> const& input_data, quants q) -> std::vector<uint8_t>
 {
     using namespace coding;
@@ -187,9 +96,9 @@ auto encode(std::vector<uint8_t> const& input_data, quants q) -> std::vector<uin
     tga::accessor_MONO quantized_accessor_g { g_vals_quantized, image._width, image._height };
     tga::accessor_MONO quantized_accessor_b { b_vals_quantized, image._width, image._height };
 
-    std::vector<uint8_t> r_vals_diff = differential_coding::encode<jpg_predictors::predictor_new>(quantized_accessor_r);
-    std::vector<uint8_t> g_vals_diff = differential_coding::encode<jpg_predictors::predictor_new>(quantized_accessor_g);
-    std::vector<uint8_t> b_vals_diff = differential_coding::encode<jpg_predictors::predictor_new>(quantized_accessor_b);
+    std::vector<uint8_t>&& r_vals_diff = differential_coding::encode<jpg_predictors::predictor_new>(quantized_accessor_r);
+    std::vector<uint8_t>&& g_vals_diff = differential_coding::encode<jpg_predictors::predictor_new>(quantized_accessor_g);
+    std::vector<uint8_t>&& b_vals_diff = differential_coding::encode<jpg_predictors::predictor_new>(quantized_accessor_b);
 
     std::vector<uint8_t> rgb_vals_diff = tga::join_channels(r_vals_diff, g_vals_diff, b_vals_diff);
 
@@ -199,7 +108,7 @@ auto encode(std::vector<uint8_t> const& input_data, quants q) -> std::vector<uin
     return save_image.to_binary();
 }
 
-auto decode(std::vector<uint8_t> const& input_data, [[maybe_unused]] quants q) -> std::vector<uint8_t>
+auto decode(std::vector<uint8_t> const& input_data) -> std::vector<uint8_t>
 {
     using namespace coding;
 
@@ -217,9 +126,9 @@ auto decode(std::vector<uint8_t> const& input_data, [[maybe_unused]] quants q) -
     tga::accessor_MONO quantized_accessor_g { g_vals_diff, image._width, image._height };
     tga::accessor_MONO quantized_accessor_b { b_vals_diff, image._width, image._height };
 
-    std::vector<uint8_t> r_vals_quantized = differential_coding::decode<jpg_predictors::predictor_new>(quantized_accessor_r);
-    std::vector<uint8_t> g_vals_quantized = differential_coding::decode<jpg_predictors::predictor_new>(quantized_accessor_g);
-    std::vector<uint8_t> b_vals_quantized = differential_coding::decode<jpg_predictors::predictor_new>(quantized_accessor_b);
+    std::vector<uint8_t>&& r_vals_quantized = differential_coding::decode<jpg_predictors::predictor_new>(quantized_accessor_r);
+    std::vector<uint8_t>&& g_vals_quantized = differential_coding::decode<jpg_predictors::predictor_new>(quantized_accessor_g);
+    std::vector<uint8_t>&& b_vals_quantized = differential_coding::decode<jpg_predictors::predictor_new>(quantized_accessor_b);
 
     std::vector<uint8_t> rgb_vals_quantized = tga::join_channels(r_vals_quantized, g_vals_quantized, b_vals_quantized);
 
@@ -234,7 +143,7 @@ int main(int argc, char** argv)
     std::ios_base::sync_with_stdio(false);
 
     utils::args_helper parser {
-        "kodowanie rownomierne\n"
+        "kodowanie rownomierne i zapis roznicowy\n"
         "\n"
         "uzycie: program <encode/decode> <wejsciowy plik tga> <wyjsciowy pliku tga> <mse/snr/manual/manual_rgb> [jezeli manual_rgb to -r val -g val -b val] [-h help]\n"
     };
@@ -276,20 +185,20 @@ int main(int argc, char** argv)
     utils::time_it<std::chrono::milliseconds> timer {};
     timer.set();
 
-    quants q {};
-    {
-        tga::image image {};
-        image.from_binary(input_data);
-
-        auto quant_chooser = create_chooser(opts);
-        q = quant_chooser(image._data);
-        std::cout << "wybrany kwantyzator=" << q << std::endl;
-    }
-
     if (opts.program_mode == "encode") {
+        quants q {};
+        {
+            tga::image image {};
+            image.from_binary(input_data);
+
+            auto quant_chooser = create_chooser(opts);
+            q = quant_chooser(image._data);
+            std::cout << "wybrany kwantyzator=" << q << std::endl;
+        }
+
         output_data = encode(input_data, q);
     } else if (opts.program_mode == "decode") {
-        output_data = decode(input_data, q);
+        output_data = decode(input_data);
     } else {
         throw std::runtime_error { "nie znany sposob dzialania programu!" + opts.program_mode + " podaj 'encode' lub 'decode'" };
     }

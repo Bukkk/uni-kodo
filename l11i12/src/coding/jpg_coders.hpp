@@ -108,19 +108,21 @@ namespace jpg_predictors {
 namespace differential_coding {
 
     template <typename Predictor>
-    auto encode(tga::accessor_MONO const& acc) -> std::vector<uint8_t>
+    auto encode(tga::accessor_MONO const& real_data) -> std::vector<uint8_t>
     {
         std::vector<uint8_t> vals;
-        vals.resize(acc.size());
+        vals.resize(real_data._image.size());
 
-        for (size_t y {}; y < acc._height; ++y) {
-            for (size_t x {}; x < acc._width; ++x) {
-                auto nth = acc.nth(x, y);
-                uint8_t predicted = Predictor::predict(acc, x, y);
-                uint8_t real = acc[nth];
+        tga::accessor_MONO diff_data = {vals, real_data._width, real_data._height};
+
+        for (size_t y {}; y < real_data._height; ++y) {
+            for (size_t x {}; x < real_data._width; ++x) {
+                auto nth = real_data.nth(x, y);
+                uint8_t predicted = Predictor::predict(real_data, x, y);
+                uint8_t real = real_data[nth];
 
                 uint8_t diff = real - predicted;
-                vals[nth] = diff;
+                diff_data[nth] = diff;
             }
         }
 
@@ -128,19 +130,23 @@ namespace differential_coding {
     }
 
     template <typename Predictor>
-    auto decode(tga::accessor_MONO const& acc) -> std::vector<uint8_t>
+    auto decode(tga::accessor_MONO const& diff_data) -> std::vector<uint8_t>
     {
         std::vector<uint8_t> vals;
-        vals.resize(acc.size());
+        vals.resize(diff_data._image.size());
 
-        for (size_t y {}; y < acc._height; ++y) {
-            for (size_t x {}; x < acc._width; ++x) {
-                auto nth = acc.nth(x, y);
-                uint8_t predicted = Predictor::predict(acc, x, y);
-                uint8_t diff = acc[nth];
+        tga::accessor_MONO real_data = {vals, diff_data._width, diff_data._height};
+
+        for (size_t y_ {}; y_ < real_data._height; ++y_) {
+            for (size_t x {}; x < real_data._width; ++x) {
+                auto y = real_data._height - y_ - 1;
+                
+                auto nth = real_data.nth(x, y);
+                uint8_t predicted = Predictor::predict(real_data, x, y);
+                uint8_t diff = diff_data[nth];
 
                 uint8_t real = predicted + diff;
-                vals[nth] = real;
+                real_data[nth] = real;
             }
         }
 
