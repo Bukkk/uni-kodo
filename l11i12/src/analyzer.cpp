@@ -24,10 +24,10 @@ void print_statistics(accessors const& orginal, accessors const& differential)
     auto snr_g = statistics::snr(differential.g._image, mse_g);
     auto snr_b = statistics::snr(differential.b._image, mse_b);
 
-    std::cout << "entropia pliku wejsciowego    =" << statistics::entropy(orginal.rgb._image) << std::endl;
-    std::cout << "entropia pliku wejsciowego (R)=" << statistics::entropy(orginal.r._image) << std::endl;
-    std::cout << "entropia pliku wejsciowego (G)=" << statistics::entropy(orginal.g._image) << std::endl;
-    std::cout << "entropia pliku wejsciowego (B)=" << statistics::entropy(orginal.b._image) << std::endl;
+    std::cout << "entropia pliku orginalnego    =" << statistics::entropy(orginal.rgb._image) << std::endl;
+    std::cout << "entropia pliku orginalnego (R)=" << statistics::entropy(orginal.r._image) << std::endl;
+    std::cout << "entropia pliku orginalnego (G)=" << statistics::entropy(orginal.g._image) << std::endl;
+    std::cout << "entropia pliku orginalnego (B)=" << statistics::entropy(orginal.b._image) << std::endl;
 
     std::cout << "mse    =" << mse << std::endl;
     std::cout << "mse (R)=" << mse_r << std::endl;
@@ -39,10 +39,10 @@ void print_statistics(accessors const& orginal, accessors const& differential)
     std::cout << "snr (G)=" << snr_g << " (" << statistics::to_decibels(snr_g) << "dB)" << std::endl;
     std::cout << "snr (B)=" << snr_b << " (" << statistics::to_decibels(snr_b) << "dB)" << std::endl;
 
-    std::cout << "entropia pliku wyjsciowego    =" << statistics::entropy(differential.rgb._image) << std::endl;
-    std::cout << "entropia pliku wyjsciowego (B)=" << statistics::entropy(differential.b._image) << std::endl;
-    std::cout << "entropia pliku wyjsciowego (R)=" << statistics::entropy(differential.r._image) << std::endl;
-    std::cout << "entropia pliku wyjsciowego (G)=" << statistics::entropy(differential.g._image) << std::endl;
+    std::cout << "entropia pliku zdekodowanego    =" << statistics::entropy(differential.rgb._image) << std::endl;
+    std::cout << "entropia pliku zdekodowanego (B)=" << statistics::entropy(differential.b._image) << std::endl;
+    std::cout << "entropia pliku zdekodowanego (R)=" << statistics::entropy(differential.r._image) << std::endl;
+    std::cout << "entropia pliku zdekodowanego (G)=" << statistics::entropy(differential.g._image) << std::endl;
 }
 
 #include "utils/args_helper.hpp"
