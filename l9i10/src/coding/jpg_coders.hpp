@@ -92,9 +92,9 @@ struct predictor_new {
         uint8_t nw = acc.check_range(x - 1, y + 1) ? acc[acc.nth(x - 1, y + 1)] : 0;
 
         if (nw >= std::max(w, n)) {
-            return std::max(w, n);
-        } else if (nw <= std::min(w, n)) {
             return std::min(w, n);
+        } else if (nw <= std::min(w, n)) {
+            return std::max(w, n);
         }
 
         return w + n - nw;
