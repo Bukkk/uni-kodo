@@ -1,0 +1,1 @@
+executable('szum', 'szum.cpp')
