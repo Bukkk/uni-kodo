@@ -7,21 +7,30 @@
 #include <random>
 #include <sstream>
 
-auto make_errors(std::vector<uint8_t> const& data, double p) -> std::vector<uint8_t>
+struct stats {
+    uint64_t bits_changed {};
+};
+
+auto make_errors(std::vector<uint8_t>& data, double p) -> stats
 {
     std::random_device dev {};
     std::default_random_engine eng { dev() };
     auto dist = std::uniform_real_distribution<>();
+
+    stats s {};
 
     std::vector<bool> vec = utils::misc::vector_cast(data);
 
     for (auto&& it : vec) { // vector<bool>
         if (dist(eng) < p) {
             it = !it;
+            ++s.bits_changed;
         }
     }
 
-    return utils::misc::vector_cast(vec);
+    data = utils::misc::vector_cast(vec);
+
+    return s;
 }
 
 int main(int argc, char** argv)
@@ -60,23 +69,25 @@ int main(int argc, char** argv)
     using utils::vector_streams::binary::operator<<;
     using utils::vector_streams::binary::operator>>;
 
-    std::vector<unsigned char> orginal_data {};
+    std::vector<unsigned char> data {};
     {
         std::ifstream file { in_path };
         if (!file) {
             throw std::runtime_error { "nie mozna otworzyc pliku=" + in_path };
         }
 
-        file >> orginal_data;
+        file >> data;
     }
 
-    std::vector<unsigned char> output_data = make_errors(orginal_data, p);
+    stats s = make_errors(data, p);
     {
         std::ofstream file { out_path };
         if (!file) {
             throw std::runtime_error { "nie mozna otworzyc pliku=" + out_path };
         }
 
-        file << output_data;
+        file << data;
     }
+
+    std::cout << "wprowadzono " << s.bits_changed << " bitswapow" << '\n';
 }
