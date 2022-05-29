@@ -2,7 +2,6 @@
 #include "utils/vector_streams.hpp"
 
 #include <algorithm>
-#include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -15,7 +14,7 @@ auto count_4_blocks(std::vector<uint8_t> const& d1, std::vector<uint8_t> const& 
     size_t size = std::min(d1.size(), d2.size());
     for (std::size_t byte {}; byte < size; ++byte) {
         uint8_t xor_val = d1[byte] ^ d2[byte];
-        
+
         if (xor_val & 0x0f) {
             ++result;
         }
