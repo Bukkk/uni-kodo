@@ -1,12 +1,13 @@
 #include "utils/args_helper.hpp"
+#include "utils/time_it.hpp"
 #include "utils/vector_streams.hpp"
+
 #include "hamming.hpp"
 
+#include <chrono>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
-
-
 
 int main(int argc, char** argv)
 {
@@ -46,8 +47,14 @@ int main(int argc, char** argv)
         file >> data_in;
     }
 
+    utils::time_it<std::chrono::milliseconds> timer {};
+    timer.set();
+
     hamming::c_hamming_8_4 hamm {};
-    std::vector<unsigned char> data_out = hamm.decode(data_in);    
+    std::vector<unsigned char> data_out = hamm.decode(data_in);
+
+    uint64_t time = timer.measure();
+
     {
         std::ofstream file { out_path };
         if (!file) {
@@ -56,4 +63,8 @@ int main(int argc, char** argv)
 
         file << data_out;
     }
+
+    std::cout << "naprawionych     blokow 4bit: " << hamm.decode_stats_.recovered_errors << '\n';
+    std::cout << "nienaprawialnych blokow 4bit: " << hamm.decode_stats_.non_recoverable_errors << '\n';
+    std::cout << "czas wykonywania: " << time << '\n';
 }

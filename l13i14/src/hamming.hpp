@@ -14,6 +14,7 @@ namespace stats {
 
     struct decode_stats {
         uint64_t non_recoverable_errors {};
+        uint64_t recovered_errors {};
     };
 }
 
@@ -187,6 +188,8 @@ struct c_hamming_8_4 {
                 auto [encoded_block, error] = repair_block(encoded[2 * i]);
                 if (error == error_type::non_recoverable) {
                     ++s.non_recoverable_errors;
+                } else if (error == error_type::recovered) {
+                    ++s.recovered_errors;
                 }
 
                 block |= decode_block(encoded_block);
@@ -195,6 +198,8 @@ struct c_hamming_8_4 {
                 auto [encoded_block, error] = repair_block(encoded[2 * i + 1]);
                 if (error == error_type::non_recoverable) {
                     ++s.non_recoverable_errors;
+                } else if (error == error_type::recovered) {
+                    ++s.recovered_errors;
                 }
 
                 block |= decode_block(encoded_block) << 4;
@@ -203,6 +208,7 @@ struct c_hamming_8_4 {
             message[i] = block;
         }
 
+        decode_stats_ = s;
         return message;
     }
 
