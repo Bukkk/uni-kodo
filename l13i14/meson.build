@@ -4,3 +4,4 @@ project('hamming', 'cpp',
                      'cpp_std=c++20'])
 
 subdir('src')
+subdir('tests')

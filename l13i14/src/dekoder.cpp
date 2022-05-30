@@ -46,7 +46,8 @@ int main(int argc, char** argv)
         file >> data_in;
     }
 
-    std::vector<unsigned char> data_out = hamming::decode(data_in);
+    hamming::c_hamming_8_4 hamm {};
+    std::vector<unsigned char> data_out = hamm.decode(data_in);    
     {
         std::ofstream file { out_path };
         if (!file) {
