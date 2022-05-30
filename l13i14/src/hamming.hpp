@@ -24,7 +24,7 @@ struct c_hamming_8_4 {
     stats::encode_stats encode_stats_ {};
     stats::decode_stats decode_stats_ {};
 
-    static auto encode_block(const uint8_t& msg)
+    static auto encode_block(const uint8_t& msg) -> uint8_t
     {
         // 1 1 0 1 0 0 0
         // 0 1 1 0 1 0 0
@@ -58,10 +58,18 @@ struct c_hamming_8_4 {
             (parity << 7);
         // clang-format on
 
+        // uint8_t const& parity = ((x0 ^ x1) ^ (x2 ^ x3)) ^ (x4 ^ x5 ^ x6);
+
+        // // clang-format off
+        // uint8_t result = 
+        //     (((x0 << 0) | (x1 << 1)) | ((x2 << 2) | (x3     << 3))) |
+        //     (((x4 << 4) | (x5 << 5)) | ((x6 << 6) | (parity << 7)));
+        // // clang-format on
+
         return result;
     }
 
-    static auto hamming_syndrome(const uint8_t& msg)
+    static auto hamming_syndrome(const uint8_t& msg) -> uint8_t
     {
         // 0 0 1 0 1 1 1
         // 0 1 0 1 1 1 0
@@ -89,7 +97,7 @@ struct c_hamming_8_4 {
         return result;
     }
 
-    static auto parity_syndrome(const uint8_t& msg)
+    static auto parity_syndrome(const uint8_t& msg) -> bool
     {
         uint8_t b0 = (msg >> 0) & 0x1;
         uint8_t b1 = (msg >> 1) & 0x1;
@@ -100,9 +108,9 @@ struct c_hamming_8_4 {
         uint8_t b6 = (msg >> 6) & 0x1;
         uint8_t b7 = (msg >> 7) & 0x1;
 
-        bool result = (b0 ^ b1 ^ b2 ^ b3 ^ b4 ^ b5 ^ b6 ^ b7) != 0;
+        uint8_t result = b0 ^ b1 ^ b2 ^ b3 ^ b4 ^ b5 ^ b6 ^ b7;
 
-        return result;
+        return result != 0;
     }
 
     enum class error_type {

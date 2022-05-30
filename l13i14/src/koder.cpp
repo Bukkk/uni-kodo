@@ -4,6 +4,7 @@
 
 #include "hamming.hpp"
 
+#include <chrono>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -46,7 +47,7 @@ int main(int argc, char** argv)
         file >> data_in;
     }
 
-    utils::time_it<std::chrono::milliseconds> timer {};
+    utils::time_it<std::chrono::microseconds> timer {};
     timer.set();
 
     hamming::c_hamming_8_4 hamm {};
@@ -63,5 +64,5 @@ int main(int argc, char** argv)
         file << data_out;
     }
 
-    std::cout << "czas wykonywania: " << time << '\n';
+    std::cout << "czas wykonywania: " << time << "us" << '\n';
 }

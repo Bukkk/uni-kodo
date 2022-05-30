@@ -47,7 +47,7 @@ int main(int argc, char** argv)
         file >> data_in;
     }
 
-    utils::time_it<std::chrono::milliseconds> timer {};
+    utils::time_it<std::chrono::microseconds> timer {};
     timer.set();
 
     hamming::c_hamming_8_4 hamm {};
@@ -66,5 +66,5 @@ int main(int argc, char** argv)
 
     std::cout << "naprawionych     blokow 4bit: " << hamm.decode_stats_.recovered_errors << '\n';
     std::cout << "nienaprawialnych blokow 4bit: " << hamm.decode_stats_.non_recoverable_errors << '\n';
-    std::cout << "czas wykonywania: " << time << '\n';
+    std::cout << "czas wykonywania: " << time << "us" << '\n';
 }
