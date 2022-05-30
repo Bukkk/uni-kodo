@@ -98,7 +98,7 @@ struct c_hamming_8_4 {
         return result;
     }
 
-    static auto parity_syndrome(const uint8_t& msg) -> bool
+    static auto parity_syndrome(const uint8_t& msg) -> uint8_t
     {
         uint8_t b0 = (msg >> 0) & 0x1;
         uint8_t b1 = (msg >> 1) & 0x1;
@@ -111,7 +111,7 @@ struct c_hamming_8_4 {
 
         uint8_t result = b0 ^ b1 ^ b2 ^ b3 ^ b4 ^ b5 ^ b6 ^ b7;
 
-        return result != 0;
+        return result;
     }
 
     enum class error_type {
@@ -123,7 +123,7 @@ struct c_hamming_8_4 {
     static auto repair_block(const uint8_t& msg) -> std::pair<uint8_t, error_type>
     {
         uint16_t hs = hamming_syndrome(msg);
-        bool ps = parity_syndrome(msg);
+        uint16_t ps = parity_syndrome(msg);
 
         if (hs != 0 && ps == 0) {
             // nienaprawialny (podwojny)
@@ -146,7 +146,6 @@ struct c_hamming_8_4 {
             //     0x00, 0x01, 0x02, 0x08, 0x04, 0x40, 0x10, 0x20
             // };
 
-            assert(hs < 8);
             uint8_t mask = lookup[hs];
             uint8_t res = msg ^ mask;
             return { res, error_type::recovered };

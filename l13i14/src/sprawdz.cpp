@@ -22,6 +22,17 @@ auto count_4_blocks(std::vector<uint8_t> const& d1, std::vector<uint8_t> const& 
         if (xor_val & 0xf0) {
             ++result;
         }
+
+        // uint64_t val1 = d1[byte];
+        // uint64_t val2 = d2[byte];
+
+        // if ((val1 & 0x0f) != (val2 & 0x0f)) {
+        //     ++result;
+        // }
+
+        // if ((val1 & 0xf0) != (val2 & 0xf0)) {
+        //     ++result;
+        // }
     }
 
     return result;
