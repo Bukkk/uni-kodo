@@ -22,8 +22,9 @@ auto make_errors(std::vector<uint8_t>& data, double p) -> stats
     std::vector<bool> vec = utils::misc::vector_cast(data);
 
     for (auto&& it : vec) { // vector<bool>
-        if (dist(eng) < p) {
-            it = !it;
+        double random = dist(eng);
+        if (random < p) {
+            it = ! it;
             ++s.bits_changed;
         }
     }

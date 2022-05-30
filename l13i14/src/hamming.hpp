@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -61,7 +62,7 @@ struct c_hamming_8_4 {
         // uint8_t const& parity = ((x0 ^ x1) ^ (x2 ^ x3)) ^ (x4 ^ x5 ^ x6);
 
         // // clang-format off
-        // uint8_t result = 
+        // uint8_t result =
         //     (((x0 << 0) | (x1 << 1)) | ((x2 << 2) | (x3     << 3))) |
         //     (((x4 << 4) | (x5 << 5)) | ((x6 << 6) | (parity << 7)));
         // // clang-format on
@@ -121,8 +122,8 @@ struct c_hamming_8_4 {
 
     static auto repair_block(const uint8_t& msg) -> std::pair<uint8_t, error_type>
     {
-        auto hs = hamming_syndrome(msg);
-        auto ps = parity_syndrome(msg);
+        uint16_t hs = hamming_syndrome(msg);
+        bool ps = parity_syndrome(msg);
 
         if (hs != 0 && ps == 0) {
             // nienaprawialny (podwojny)
@@ -138,11 +139,17 @@ struct c_hamming_8_4 {
             // uint8_t mask = (1 << (hs - 1));
 
             constexpr std::array<uint8_t, 8> lookup {
-                0x00, 0x01, 0x02, 0x08, 0x04, 0x40, 0x10, 0x20
+                0x00, 0x40, 0x02, 0x20, 0x01, 0x04, 0x08, 0x10
             };
 
+            // constexpr std::array<uint8_t, 8> lookup {
+            //     0x00, 0x01, 0x02, 0x08, 0x04, 0x40, 0x10, 0x20
+            // };
+
+            assert(hs < 8);
             uint8_t mask = lookup[hs];
-            return { msg ^ mask, error_type::recovered };
+            uint8_t res = msg ^ mask;
+            return { res, error_type::recovered };
 
         } else {
             // brak bledu
